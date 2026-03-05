@@ -152,10 +152,10 @@ export function VirtualKeyboard() {
     if (!inputName) return null;
 
     return (
-        <div className="kiosk-keyboard-container fixed bottom-0 left-0 w-full bg-white/70 backdrop-blur-3xl border-t border-black/10 p-3 z-[100] shadow-[0_-20px_50px_rgba(0,0,0,0.05)] animate-fade-in-up-soft overflow-hidden overscroll-none touch-none">
+        <div className="kiosk-keyboard-container fixed bottom-0 left-0 w-full bg-white/70 dark:bg-[#0a0a0a]/80 backdrop-blur-3xl border-t border-black/10 dark:border-white/10 p-3 z-[100] shadow-[0_-20px_50px_rgba(0,0,0,0.05)] dark:shadow-[0_-20px_50px_rgba(255,255,255,0.02)] animate-fade-in-up-soft overflow-hidden overscroll-none touch-none">
             <div className="max-w-4xl mx-auto relative z-10">
                 <div className="flex justify-between items-center mb-2 px-2">
-                    <span className="text-xs text-black/40 font-bold tracking-widest uppercase">Tastiera Kiosk</span>
+                    <span className="text-xs text-black/40 dark:text-white/40 font-bold tracking-widest uppercase">Tastiera Kiosk</span>
                     <button
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
@@ -164,7 +164,7 @@ export function VirtualKeyboard() {
                                 focusedInputRef.current.blur();
                             }
                         }}
-                        className="text-xs font-semibold px-4 py-1.5 rounded-full cursor-pointer bg-black text-white hover:bg-black/80 transition-all shadow-[0_5px_15px_-5px_rgba(0,0,0,0.5)] uppercase tracking-wider"
+                        className="text-xs font-semibold px-4 py-1.5 rounded-full cursor-pointer bg-black text-white hover:bg-black/80 dark:bg-white dark:text-black dark:hover:bg-white/80 transition-all shadow-[0_5px_15px_-5px_rgba(0,0,0,0.5)] uppercase tracking-wider"
                     >
                         Chiudi ↵
                     </button>
@@ -234,6 +234,23 @@ export function VirtualKeyboard() {
         .dance-keyboard .hg-button-enter, .dance-keyboard .hg-button-shift, .dance-keyboard .hg-button-bksp {
            background: rgba(0,0,0,0.05) !important;
            font-weight: 500 !important;
+        }
+
+        /* Dark Mode Overrides */
+        .dark .dance-keyboard .hg-button {
+           background: #1a1a1a !important;
+           color: white !important;
+           border: 1px solid rgba(255,255,255,0.1) !important;
+           border-bottom-width: 2px !important;
+        }
+        .dark .dance-keyboard .hg-button:active, .dark .dance-keyboard .hg-activeButton {
+           background: #2a2a2a !important;
+        }
+        .dark .dance-keyboard .hg-button-space {
+           background: rgba(255,255,255,0.05) !important;
+        }
+        .dark .dance-keyboard .hg-button-enter, .dark .dance-keyboard .hg-button-shift, .dark .dance-keyboard .hg-button-bksp {
+           background: rgba(255,255,255,0.1) !important;
         }
       `}} />
         </div>

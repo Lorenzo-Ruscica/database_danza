@@ -4,9 +4,12 @@ import { useRef, useState, useCallback } from "react"
 import { useKioskStore } from "@/store/kiosk-store"
 import { Button } from "@/components/ui/button"
 import { Camera, RefreshCw, Upload, CheckCircle2 } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
-export default function Step6Certificato({ onComplete }: { onComplete?: () => void }) {
-    const { certificatoBlob, setCertificatoBlob, prevStep, anagrafica } = useKioskStore()
+export default function Step6Certificato({ onComplete }: { onComplete?: (data: { id: string, tessera_numero: string }) => void }) {
+    const { certificatoBlob, setCertificatoBlob, prevStep, anagrafica, residenza, contatti, corsi } = useKioskStore()
+
+    const supabase = createClient()
 
     const videoRef = useRef<HTMLVideoElement>(null)
     const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -74,17 +77,80 @@ export default function Step6Certificato({ onComplete }: { onComplete?: () => vo
     }
 
     const handleSubmitEnrollment = async () => {
-        // QUI ANDRA' LA LOGICA DI UPLOAD A SUPABASE E CONFERMA
-        // Attualmente mockiamo un submit riuscito
-        setIsCapturing(true)
-        setTimeout(() => {
-            setIsCapturing(false)
-            if (onComplete) onComplete()
-            else {
-                alert(`Iscrizione completata per ${anagrafica.nome}! La notifica è stata mandata all'admin.`)
-                window.location.reload() // Mock app reset
+        try {
+            setIsCapturing(true)
+
+            // Generazione numero tessera random per ora (es: TS-2024-1234)
+            const generatedTessera = `TS-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`
+
+            // 1. Inserisci Anagrafica in Supabase
+            const { data: allievo, error: allievoError } = await supabase.from('allievi').insert([{
+                nome: anagrafica.nome,
+                cognome: anagrafica.cognome,
+                data_nascita: anagrafica.dataNascita,
+                luogo_nascita: anagrafica.luogoNascita,
+                provincia_nascita: anagrafica.provinciaNascita,
+                codice_fiscale: residenza.codiceFiscale,
+                indirizzo_residenza: residenza.indirizzo,
+                cap_residenza: residenza.cap,
+                provincia_residenza: residenza.provincia,
+                email: contatti.email || null,
+                telefono: contatti.telefono,
+                is_minore: anagrafica.isMinorenne,
+                tessera_numero: generatedTessera,
+                tutore_nome: anagrafica.isMinorenne ? anagrafica.tutoreNome : null,
+                tutore_cognome: anagrafica.isMinorenne ? anagrafica.tutoreCognome : null,
+                tutore_codice_fiscale: anagrafica.isMinorenne ? anagrafica.tutoreCodiceFiscale : null,
+            }]).select().single()
+
+            if (allievoError) throw allievoError;
+
+            const allievoId = allievo.id
+
+            // 2. Iscrivi ai corsi selezionati
+            if (corsi && corsi.length > 0) {
+                const iscrizioni = corsi.map(cId => ({
+                    allievo_id: allievoId,
+                    corso_id: cId
+                }))
+                const { error: corsiError } = await supabase.from('iscrizioni_corsi').insert(iscrizioni)
+                if (corsiError) console.error("Errore iscrizione corsi:", corsiError)
             }
-        }, 2000)
+
+            // 3. Upload certificato medico (se scattato)
+            if (certificatoBlob) {
+                const fileName = `${allievoId}-${Date.now()}.jpg`
+                // Tentiamo l'upload nel bucket 'certificati'
+                const { data: uploadData, error: uploadErr } = await supabase.storage.from('certificati').upload(fileName, certificatoBlob)
+
+                if (!uploadErr && uploadData) {
+                    const dataScadenza = new Date()
+                    dataScadenza.setFullYear(dataScadenza.getFullYear() + 1) // Scadenza tra un anno esatto
+
+                    const { error: certErr } = await supabase.from('certificati').insert([{
+                        allievo_id: allievoId,
+                        url_foto: uploadData.path,
+                        data_scadenza: dataScadenza.toISOString().split('T')[0]
+                    }])
+                    if (certErr) console.error("Errore salvataggio record certificato:", certErr)
+                } else {
+                    console.error("Errore caricamento Storage:", uploadErr)
+                }
+            }
+
+            // 4. Fine & passaggio alla schermata di successo
+            setIsCapturing(false)
+            if (onComplete) {
+                onComplete({ id: allievoId, tessera_numero: generatedTessera })
+            } else {
+                alert(`Iscrizione completata per ${anagrafica.nome}!`)
+                window.location.reload()
+            }
+        } catch (error) {
+            console.error("Detailed insert error:", error)
+            alert("Si è verificato un errore durante l'iscrizione. Controlla che i dati (es. codice fiscale) non siano già registrati.")
+            setIsCapturing(false)
+        }
     }
 
     // Cleanup alla distruzione del componente

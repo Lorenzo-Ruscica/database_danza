@@ -67,7 +67,7 @@ export function InactivityTimer({ onTimeout }: InactivityTimerProps) {
     if (!isIdle) return null;
 
     return (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] bg-black/90 backdrop-blur-xl text-white px-8 py-4 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] flex items-center gap-4 animate-fade-in-up-soft border border-black/20">
+        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] bg-black/90 dark:bg-white/90 backdrop-blur-xl text-white dark:text-black px-8 py-4 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] dark:shadow-[0_20px_50px_rgba(255,255,255,0.1)] flex items-center gap-4 animate-fade-in-up-soft border border-black/20 dark:border-white/20">
             <div className="flex items-center justify-center w-3 h-3 relative">
                 <span className="w-full h-full rounded-full bg-red-400 animate-ping absolute"></span>
                 <span className="w-2 h-2 rounded-full bg-red-500 relative z-10"></span>
