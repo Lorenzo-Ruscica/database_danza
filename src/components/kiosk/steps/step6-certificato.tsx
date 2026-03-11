@@ -7,7 +7,7 @@ import { Camera, RefreshCw, Upload, CheckCircle2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 export default function Step6Certificato({ onComplete }: { onComplete?: (data: { id: string, tessera_numero: string }) => void }) {
-    const { certificatoBlob, setCertificatoBlob, prevStep, anagrafica, residenza, contatti, corsi } = useKioskStore()
+    const { certificatoBlob, setCertificatoBlob, prevStep, anagrafica, residenza, contatti, corsi, totalePrezzo } = useKioskStore()
 
     const supabase = createClient()
 
@@ -83,8 +83,12 @@ export default function Step6Certificato({ onComplete }: { onComplete?: (data: {
             // Generazione numero tessera random per ora (es: TS-2024-1234)
             const generatedTessera = `TS-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`
 
-            // 1. Inserisci Anagrafica in Supabase
-            const { data: allievo, error: allievoError } = await supabase.from('allievi').insert([{
+            // Pre-generiamo l'ID univoco nel browser per evitare di dover fare una SELECT dopo l'INSERT (che verrebbe bloccata dal lucchetto RLS in lettura)
+            const allievoId = crypto.randomUUID()
+
+            // 1. Inserisci Anagrafica in Supabase (SENZA .select() alla fine)
+            const { error: allievoError } = await supabase.from('allievi').insert([{
+                id: allievoId,
                 nome: anagrafica.nome,
                 cognome: anagrafica.cognome,
                 data_nascita: anagrafica.dataNascita,
@@ -101,11 +105,9 @@ export default function Step6Certificato({ onComplete }: { onComplete?: (data: {
                 tutore_nome: anagrafica.isMinorenne ? anagrafica.tutoreNome : null,
                 tutore_cognome: anagrafica.isMinorenne ? anagrafica.tutoreCognome : null,
                 tutore_codice_fiscale: anagrafica.isMinorenne ? anagrafica.tutoreCodiceFiscale : null,
-            }]).select().single()
+            }])
 
             if (allievoError) throw allievoError;
-
-            const allievoId = allievo.id
 
             // 2. Iscrivi ai corsi selezionati
             if (corsi && corsi.length > 0) {
@@ -138,7 +140,31 @@ export default function Step6Certificato({ onComplete }: { onComplete?: (data: {
                 }
             }
 
-            // 4. Fine & passaggio alla schermata di successo
+            // 4. Invia email con QR Code (se presente)
+            if (contatti.email) {
+                try {
+                    const scanUrl = `${window.location.origin}/admin/scanner?id=${allievoId}`;
+                    await fetch('/api/send-email', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: contatti.email,
+                            tessera_numero: generatedTessera,
+                            nome: `${anagrafica.nome} ${anagrafica.cognome}`,
+                            allievoId: allievoId,
+                            scanUrl: scanUrl,
+                            anagrafica: anagrafica,
+                            residenza: residenza,
+                            contatti: contatti,
+                            totale_prezzo: totalePrezzo,
+                        })
+                    })
+                } catch (emailErr) {
+                    console.error("Errore invio email:", emailErr)
+                }
+            }
+
+            // 5. Fine & passaggio alla schermata di successo
             setIsCapturing(false)
             if (onComplete) {
                 onComplete({ id: allievoId, tessera_numero: generatedTessera })

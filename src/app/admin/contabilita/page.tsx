@@ -1,9 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
-import { Download, FileText, Search, PlusCircle, TrendingUp, CalendarDays } from "lucide-react"
+import { Download, FileText, Search, PlusCircle, TrendingUp, CalendarDays, Loader2 } from "lucide-react"
+
+import { createClient } from "@/lib/supabase/client"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -20,37 +22,58 @@ import { Badge } from "@/components/ui/badge"
 import { StampaRicevuta } from "@/components/admin/stampa-ricevuta"
 import type { Pagamento, Allievo } from "@/types/database"
 
-// Mock data
-const MOCK_PAGAMENTI: (Pagamento & { allievo: Partial<Allievo> })[] = [
-    {
-        id: "p1",
-        allievo_id: "1",
-        importo: 50.00,
-        mese_riferimento: "2024-03",
-        data_pagamento: "2024-03-01T10:00:00Z",
-        allievo: { nome: "Mario", cognome: "Rossi", tessera_numero: "TS-2024-001" }
-    },
-    {
-        id: "p2",
-        allievo_id: "2",
-        importo: 65.00,
-        mese_riferimento: "2024-03",
-        data_pagamento: "2024-03-02T15:30:00Z",
-        allievo: { nome: "Giulia", cognome: "Bianchi", tessera_numero: "TS-2024-002" }
-    },
-    {
-        id: "p3",
-        allievo_id: "3",
-        importo: 80.00,
-        mese_riferimento: "2024-02",
-        data_pagamento: "2024-02-05T09:15:00Z",
-        allievo: { nome: "Luca", cognome: "Verdi", tessera_numero: "TS-2024-003" }
-    }
-]
-
 export default function ContabilitaPage() {
+    const [pagamenti, setPagamenti] = useState<(Pagamento & { allievo: Partial<Allievo> })[]>([])
+    const [isLoading, setIsLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
     const [stampaCorrente, setStampaCorrente] = useState<(Pagamento & { allievo: Partial<Allievo> }) | null>(null)
+
+    const supabase = createClient()
+
+    useEffect(() => {
+        const fetchPagamenti = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('pagamenti')
+                    .select(`
+                        id,
+                        allievo_id,
+                        importo,
+                        mese_riferimento,
+                        data_pagamento,
+                        allievi (
+                            nome,
+                            cognome,
+                            tessera_numero
+                        )
+                    `)
+                    .order('data_pagamento', { ascending: false })
+
+                if (error) throw error;
+
+                if (data) {
+                    const mappedPagamenti = data.map((d: any) => ({
+                        id: d.id,
+                        allievo_id: d.allievo_id,
+                        importo: d.importo,
+                        mese_riferimento: d.mese_riferimento,
+                        data_pagamento: d.data_pagamento,
+                        allievo: {
+                            nome: d.allievi?.nome || "Sconosciuto",
+                            cognome: d.allievi?.cognome || "",
+                            tessera_numero: d.allievi?.tessera_numero || "N/A"
+                        }
+                    }))
+                    setPagamenti(mappedPagamenti)
+                }
+            } catch (err) {
+                console.error("Errore recupero pagamenti:", err)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        fetchPagamenti()
+    }, [])
 
     // Esegue la stampa temporanea montando prima il DOM, poi chiamando print()
     const handlePrint = (pagamento: any) => {
@@ -62,12 +85,21 @@ export default function ContabilitaPage() {
         }, 100)
     }
 
-    const filteredPagamenti = MOCK_PAGAMENTI.filter(p =>
-        `${p.allievo.nome} ${p.allievo.cognome}`.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredPagamenti = pagamenti.filter(p =>
+        `${p.allievo.nome} ${p.allievo.cognome} ${p.allievo.tessera_numero}`.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
-    const incassoOggi = 115.00 // Mock value
-    const incassoMese = 2350.00 // Mock value
+    // Compute totals dynamically
+    const today = new Date().toISOString().split('T')[0]
+    const currentMonth = today.substring(0, 7) // YYYY-MM
+
+    const incassoOggi = pagamenti
+        .filter(p => p.data_pagamento.startsWith(today))
+        .reduce((sum, p) => sum + Number(p.importo), 0)
+
+    const incassoMese = pagamenti
+        .filter(p => p.data_pagamento.startsWith(currentMonth))
+        .reduce((sum, p) => sum + Number(p.importo), 0)
 
     return (
         <div className="flex flex-col gap-6 relative">
@@ -178,9 +210,19 @@ export default function ContabilitaPage() {
                                         </TableCell>
                                     </TableRow>
                                 ))}
-                                {filteredPagamenti.length === 0 && (
+                                {isLoading && (
                                     <TableRow>
                                         <TableCell colSpan={5} className="h-24 text-center">
+                                            <div className="flex items-center justify-center text-muted-foreground gap-2">
+                                                <Loader2 className="h-5 w-5 animate-spin" />
+                                                Caricamento ricevute in corso...
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                                {!isLoading && filteredPagamenti.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                                             Nessun pagamento trovato.
                                         </TableCell>
                                     </TableRow>

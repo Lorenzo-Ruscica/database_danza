@@ -1,9 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
-import { Plus, Search, CheckCircle2, XCircle, AlertTriangle } from "lucide-react"
+import { Plus, Search, CheckCircle2, XCircle, AlertTriangle, Loader2 } from "lucide-react"
+
+import { createClient } from "@/lib/supabase/client"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,49 +21,81 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import type { Allievo } from "@/types/database"
 
-// Mock data for development before Supabase connection
-const MOCK_ALLIEVI: Allievo[] = [
-    {
-        id: "1",
-        nome: "Mario",
-        cognome: "Rossi",
-        tessera_numero: "TS-2024-001",
-        codice_fiscale: "MRORSS80A01H501T",
-        data_nascita: "1980-01-01",
-        luogo_nascita: "Roma",
-        provincia_nascita: "RM",
-        indirizzo: "Via Roma 1",
-        cap: "00100",
-        provincia_residenza: "RM",
-        telefono: "3331234567",
-        email: "mario@example.com",
-        pagamento_iscrizione: true,
-        scadenza_certificato_medico: "2024-12-31"
-    },
-    {
-        id: "2",
-        nome: "Giulia",
-        cognome: "Bianchi",
-        tessera_numero: "TS-2024-002",
-        codice_fiscale: "GLABNC95M41F205W",
-        data_nascita: "1995-08-01",
-        luogo_nascita: "Milano",
-        provincia_nascita: "MI",
-        indirizzo: "Via Milano 2",
-        cap: "20100",
-        provincia_residenza: "MI",
-        telefono: "3337654321",
-        email: "giulia@example.com",
-        pagamento_iscrizione: false,
-        scadenza_certificato_medico: "2024-03-15" // Scaduto
-    }
-]
-
 export default function AllieviPage() {
+    const [allievi, setAllievi] = useState<Allievo[]>([])
+    const [isLoading, setIsLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
+    const supabase = createClient()
 
-    const filteredAllievi = MOCK_ALLIEVI.filter(a =>
-        `${a.nome} ${a.cognome} ${a.tessera_numero}`.toLowerCase().includes(searchTerm.toLowerCase())
+    useEffect(() => {
+        const fetchAllievi = async () => {
+            try {
+                const { data, error } = await supabase
+                    .from('allievi')
+                    .select(`
+                        id,
+                        nome,
+                        cognome,
+                        tessera_numero,
+                        codice_fiscale,
+                        data_nascita,
+                        luogo_nascita,
+                        provincia_nascita,
+                        indirizzo_residenza,
+                        cap_residenza,
+                        provincia_residenza,
+                        telefono,
+                        email,
+                        iscrizione_pagata,
+                        certificati (
+                            data_scadenza
+                        )
+                    `)
+                    .order('created_at', { ascending: false })
+
+                if (error) throw error;
+
+                if (data) {
+                    const formattedAllievi: Allievo[] = data.map((d: any) => {
+                        // Get the most recent certificate expiration date if multiple exist
+                        let scadenza = null;
+                        if (d.certificati && d.certificati.length > 0) {
+                            const scadenze = d.certificati.map((c: any) => new Date(c.data_scadenza).getTime());
+                            scadenza = new Date(Math.max(...scadenze)).toISOString().split('T')[0];
+                        }
+
+                        return {
+                            id: d.id,
+                            nome: d.nome,
+                            cognome: d.cognome,
+                            tessera_numero: d.tessera_numero || "Da Assegnare",
+                            codice_fiscale: d.codice_fiscale,
+                            data_nascita: d.data_nascita,
+                            luogo_nascita: d.luogo_nascita,
+                            provincia_nascita: d.provincia_nascita,
+                            indirizzo: d.indirizzo_residenza,
+                            cap: d.cap_residenza,
+                            provincia_residenza: d.provincia_residenza,
+                            telefono: d.telefono || "N/A",
+                            email: d.email || "N/A",
+                            pagamento_iscrizione: d.iscrizione_pagata,
+                            scadenza_certificato_medico: scadenza
+                        }
+                    });
+                    setAllievi(formattedAllievi);
+                }
+            } catch (error) {
+                console.error("Errore recupero allievi:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAllievi();
+    }, []);
+
+    const filteredAllievi = allievi.filter(a =>
+        `${a.nome} ${a.cognome} ${a.tessera_numero} ${a.codice_fiscale}`.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
     const isCertificatoScaduto = (dataScadenza: string | null) => {
@@ -167,10 +201,20 @@ export default function AllieviPage() {
                                         </TableCell>
                                     </TableRow>
                                 ))}
-                                {filteredAllievi.length === 0 && (
+                                {isLoading && (
                                     <TableRow>
                                         <TableCell colSpan={6} className="h-24 text-center">
-                                            Nessun allievo trovato.
+                                            <div className="flex items-center justify-center text-muted-foreground gap-2">
+                                                <Loader2 className="h-5 w-5 animate-spin" />
+                                                Caricamento anagrafiche in corso...
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                                {!isLoading && filteredAllievi.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
+                                            Nessun allievo trovato. {searchTerm ? "Prova a cambiare i parametri di ricerca." : "Aggiungi un allievo o usa il Kiosk per iscrivere qualcuno."}
                                         </TableCell>
                                     </TableRow>
                                 )}

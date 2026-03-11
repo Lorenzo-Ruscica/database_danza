@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useKioskStore } from "@/store/kiosk-store"
 import Step1Anagrafica from "@/components/kiosk/steps/step1-anagrafica"
 import Step2Residenza from "@/components/kiosk/steps/step2-residenza"
@@ -19,6 +19,11 @@ export default function KioskPage() {
   const [mockId, setMockId] = useState("sd-xyz-12345") // ID allievo db
   const [mockNum, setMockNum] = useState("TS-2024-004") // Numero tessera auto-calc
   const [isDark, setIsDark] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // Riceve i dati finali di avvenuta registrazione (da Step 6)
   const handleEnrollmentComplete = (data: { id: string, tessera_numero: string }) => {
@@ -58,6 +63,10 @@ export default function KioskPage() {
       case 6: return <Step6Certificato onComplete={handleEnrollmentComplete} />
       default: return <Step1Anagrafica />
     }
+  }
+
+  if (!mounted) {
+    return null; // Resolve hydration mismatch
   }
 
   return (

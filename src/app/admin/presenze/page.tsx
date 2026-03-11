@@ -1,7 +1,9 @@
 "use client"
 
-import { useState } from "react"
-import { Check, User, CalendarDays } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Check, User, CalendarDays, Loader2 } from "lucide-react"
+
+import { createClient } from "@/lib/supabase/client"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -17,24 +19,64 @@ import { it } from "date-fns/locale"
 import { StampaListaCorsi } from "@/components/admin/stampa-registro"
 import { Printer } from "lucide-react"
 
-// Mock data
-const MOCK_CORSI = [
-    { id: "1", nome: "Danza Classica - Principianti" },
-    { id: "2", nome: "Hip Hop - Avanzato" },
-]
-
-const MOCK_ISCRITTI = [
-    { id: "1", nome: "Mario Rossi", presente: false },
-    { id: "2", nome: "Giulia Bianchi", presente: true },
-    { id: "3", nome: "Luca Verdi", presente: false },
-    { id: "4", nome: "Anna Neri", presente: false },
-    { id: "5", nome: "Marco Gialli", presente: true },
-]
-
 export default function PresenzePage() {
-    const [corsoSelezionato, setCorsoSelezionato] = useState<string>("1")
-    const [iscritti, setIscritti] = useState(MOCK_ISCRITTI)
+    const [corsi, setCorsi] = useState<{ id: string, nome: string }[]>([])
+    const [iscritti, setIscritti] = useState<{ id: string, nome: string, presente: boolean }[]>([])
+    const [corsoSelezionato, setCorsoSelezionato] = useState<string>("")
     const [isPrinting, setIsPrinting] = useState(false)
+    const [isLoading, setIsLoading] = useState(true)
+
+    const supabase = createClient()
+
+    // 1. Fetch available courses on mount
+    useEffect(() => {
+        const fetchCorsi = async () => {
+            const { data, error } = await supabase.from('corsi').select('id, nome').order('nome')
+            if (data && data.length > 0) {
+                setCorsi(data)
+                setCorsoSelezionato(data[0].id)
+            }
+            setIsLoading(false)
+        }
+        fetchCorsi()
+    }, [])
+
+    // 2. Fetch students when a course is selected
+    useEffect(() => {
+        const fetchIscritti = async () => {
+            if (!corsoSelezionato) return;
+
+            setIsLoading(true)
+            const { data, error } = await supabase
+                .from('iscrizioni_corsi')
+                .select(`
+                    allievi (
+                        id,
+                        nome,
+                        cognome
+                    )
+                `)
+                .eq('corso_id', corsoSelezionato)
+
+            if (data) {
+                const mappedIscritti = data
+                    .filter((d: any) => d.allievi)
+                    .map((d: any) => {
+                        const allievoData = Array.isArray(d.allievi) ? d.allievi[0] : d.allievi;
+                        return {
+                            id: allievoData.id,
+                            nome: `${allievoData.cognome} ${allievoData.nome}`,
+                            presente: false // Reset presenze by default today
+                        }
+                    })
+                    .sort((a, b) => a.nome.localeCompare(b.nome))
+
+                setIscritti(mappedIscritti)
+            }
+            setIsLoading(false)
+        }
+        fetchIscritti()
+    }, [corsoSelezionato])
 
     const togglePresenza = (id: string) => {
         setIscritti(iscritti.map(i =>
@@ -50,7 +92,7 @@ export default function PresenzePage() {
         }, 100)
     }
 
-    const currentContextCourse = MOCK_CORSI.find(c => c.id === corsoSelezionato)
+    const currentContextCourse = corsi.find(c => c.id === corsoSelezionato)
 
     return (
         <div className="flex flex-col h-[calc(100vh-8rem)] gap-4 relative">
@@ -74,7 +116,7 @@ export default function PresenzePage() {
                             <SelectValue placeholder="Seleziona Corso" />
                         </SelectTrigger>
                         <SelectContent>
-                            {MOCK_CORSI.map(corso => (
+                            {corsi.map(corso => (
                                 <SelectItem key={corso.id} value={corso.id} className="text-lg py-3">
                                     {corso.nome}
                                 </SelectItem>
@@ -86,34 +128,45 @@ export default function PresenzePage() {
 
             {/* Griglia Allievi (ottimizzata per iPad/Tablet) */}
             <div className="flex-1 overflow-auto rounded-xl border p-4 bg-background">
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                    {iscritti.map((allievo) => (
-                        <Card
-                            key={allievo.id}
-                            className={`cursor-pointer transition-all active:scale-95 border-2 ${allievo.presente
-                                ? 'bg-green-500/10 border-green-500'
-                                : 'bg-card border-border hover:border-primary/50'
-                                }`}
-                            onClick={() => togglePresenza(allievo.id)}
-                        >
-                            <CardContent className="flex flex-col items-center justify-center p-6 min-h-[160px] text-center gap-4 relative">
-                                {allievo.presente && (
-                                    <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
-                                        <Check className="h-4 w-4" />
+                {isLoading ? (
+                    <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-4">
+                        <Loader2 className="h-10 w-10 animate-spin" />
+                        <p className="text-xl">Sincronizzazione registro...</p>
+                    </div>
+                ) : iscritti.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-muted-foreground text-xl">
+                        Nessun allievo iscritto a questo corso.
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                        {iscritti.map((allievo) => (
+                            <Card
+                                key={allievo.id}
+                                className={`cursor-pointer transition-all active:scale-95 border-2 ${allievo.presente
+                                    ? 'bg-green-500/10 border-green-500'
+                                    : 'bg-card border-border hover:border-primary/50'
+                                    }`}
+                                onClick={() => togglePresenza(allievo.id)}
+                            >
+                                <CardContent className="flex flex-col items-center justify-center p-6 min-h-[160px] text-center gap-4 relative">
+                                    {allievo.presente && (
+                                        <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
+                                            <Check className="h-4 w-4" />
+                                        </div>
+                                    )}
+
+                                    <div className={`rounded-full p-4 ${allievo.presente ? 'bg-green-500/20 text-green-600' : 'bg-muted text-muted-foreground'}`}>
+                                        <User className="h-8 w-8" />
                                     </div>
-                                )}
 
-                                <div className={`rounded-full p-4 ${allievo.presente ? 'bg-green-500/20 text-green-600' : 'bg-muted text-muted-foreground'}`}>
-                                    <User className="h-8 w-8" />
-                                </div>
-
-                                <span className={`font-medium text-lg ${allievo.presente ? 'text-green-700 dark:text-green-400' : ''}`}>
-                                    {allievo.nome}
-                                </span>
-                            </CardContent>
-                        </Card>
-                    ))}
-                </div>
+                                    <span className={`font-medium text-lg ${allievo.presente ? 'text-green-700 dark:text-green-400' : ''}`}>
+                                        {allievo.nome}
+                                    </span>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                )}
             </div>
 
             <div className="flex flex-col sm:flex-row justify-between gap-4 p-2">

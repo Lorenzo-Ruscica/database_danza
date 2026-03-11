@@ -9,6 +9,11 @@ interface InactivityTimerProps {
 export function InactivityTimer({ onTimeout }: InactivityTimerProps) {
     const [isIdle, setIsIdle] = useState(false);
     const [countdown, setCountdown] = useState(90); // 1 minuto e 30 secondi
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const idleTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -64,7 +69,7 @@ export function InactivityTimer({ onTimeout }: InactivityTimerProps) {
         };
     }, [isIdle, onTimeout]);
 
-    if (!isIdle) return null;
+    if (!mounted || !isIdle) return null;
 
     return (
         <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[100] bg-black/90 dark:bg-white/90 backdrop-blur-xl text-white dark:text-black px-8 py-4 rounded-full shadow-[0_20px_50px_rgba(0,0,0,0.3)] dark:shadow-[0_20px_50px_rgba(255,255,255,0.1)] flex items-center gap-4 animate-fade-in-up-soft border border-black/20 dark:border-white/20">

@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
-import { Plus, Search, Users, Euro } from "lucide-react"
+import { useState, useEffect } from "react"
+import { Plus, Search, Users, Euro, Loader2 } from "lucide-react"
 
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -16,35 +17,50 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import type { Corso } from "@/types/database"
 
-// Mock data
-const MOCK_CORSI: (Corso & { iscritti_count: number })[] = [
-    {
-        id: "1",
-        nome: "Danza Classica - Principianti",
-        prezzo_mensile: 50.00,
-        descrizione: "Corso base per bambini dai 6 agli 8 anni",
-        iscritti_count: 12
-    },
-    {
-        id: "2",
-        nome: "Hip Hop - Avanzato",
-        prezzo_mensile: 65.00,
-        descrizione: "Corso avanzato per ragazzi over 14",
-        iscritti_count: 8
-    },
-    {
-        id: "3",
-        nome: "Ballo da Sala - Coppie",
-        prezzo_mensile: 80.00,
-        descrizione: "Liscio, Standard e Latino Americano per coppie",
-        iscritti_count: 5 // 5 coppie
-    }
-]
-
 export default function CorsiPage() {
+    const [corsi, setCorsi] = useState<(Corso & { iscritti_count: number })[]>([])
+    const [isLoading, setIsLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
 
-    const filteredCorsi = MOCK_CORSI.filter(c =>
+    const supabase = createClient()
+
+    useEffect(() => {
+        const fetchCorsi = async () => {
+            try {
+                // Fetch corsi and their count from iscrizioni_corsi
+                const { data, error } = await supabase
+                    .from('corsi')
+                    .select(`
+                        id,
+                        nome,
+                        prezzo_standard,
+                        descrizione,
+                        iscrizioni_corsi ( count )
+                    `)
+                    .order('nome', { ascending: true })
+
+                if (error) throw error;
+
+                if (data) {
+                    const mappedCorsi = data.map((d: any) => ({
+                        id: d.id,
+                        nome: d.nome,
+                        prezzo_mensile: d.prezzo_standard || 0,
+                        descrizione: d.descrizione,
+                        iscritti_count: d.iscrizioni_corsi[0]?.count || 0
+                    }))
+                    setCorsi(mappedCorsi)
+                }
+            } catch (err) {
+                console.error("Errore recupero corsi:", err)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        fetchCorsi()
+    }, [])
+
+    const filteredCorsi = corsi.filter(c =>
         c.nome.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
@@ -65,7 +81,7 @@ export default function CorsiPage() {
                         <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{MOCK_CORSI.length}</div>
+                        <div className="text-2xl font-bold">{corsi.length}</div>
                     </CardContent>
                 </Card>
                 <Card>
@@ -75,7 +91,7 @@ export default function CorsiPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            {MOCK_CORSI.reduce((acc, curr) => acc + curr.iscritti_count, 0)}
+                            {corsi.reduce((acc, curr) => acc + curr.iscritti_count, 0)}
                         </div>
                         <p className="text-xs text-muted-foreground">Allievi frequentanti</p>
                     </CardContent>
@@ -87,7 +103,7 @@ export default function CorsiPage() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold">
-                            € {MOCK_CORSI.reduce((acc, curr) => acc + (curr.iscritti_count * curr.prezzo_mensile), 0).toFixed(2)}
+                            € {corsi.reduce((acc, curr) => acc + (curr.iscritti_count * curr.prezzo_mensile), 0).toFixed(2)}
                         </div>
                         <p className="text-xs text-muted-foreground">Esclusi sconti / override</p>
                     </CardContent>
@@ -149,7 +165,17 @@ export default function CorsiPage() {
                                         </TableCell>
                                     </TableRow>
                                 ))}
-                                {filteredCorsi.length === 0 && (
+                                {isLoading && (
+                                    <TableRow>
+                                        <TableCell colSpan={5} className="h-24 text-center">
+                                            <div className="flex items-center justify-center text-muted-foreground gap-2">
+                                                <Loader2 className="h-5 w-5 animate-spin" />
+                                                Caricamento corsi in corso...
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                                {!isLoading && filteredCorsi.length === 0 && (
                                     <TableRow>
                                         <TableCell colSpan={5} className="h-24 text-center">
                                             Nessun corso trovato.

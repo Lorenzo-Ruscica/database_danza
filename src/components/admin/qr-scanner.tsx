@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Html5QrcodeScanner, Html5QrcodeScanType } from "html5-qrcode"
 import { useRouter } from "next/navigation"
 import {
@@ -22,43 +22,71 @@ export function AdminQrScanner({ open, onOpenChange }: AdminQrScannerProps) {
     const router = useRouter()
     const [error, setError] = useState<string | null>(null)
 
+    const scannerRef = useRef<Html5QrcodeScanner | null>(null)
+
     useEffect(() => {
-        if (!open) return
-
-        // Setup Scanner UI when Dialog opens
-        const scanner = new Html5QrcodeScanner(
-            "reader",
-            {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
-            },
-            false
-        )
-
-        const onScanSuccess = (decodedText: string) => {
-            // Formato atteso dal Totem Success: "sd-allievo:ID_ALLIEVO"
-            if (decodedText.startsWith("sd-allievo:")) {
-                const idAllievo = decodedText.split(":")[1]
-                scanner.clear()
-                onOpenChange(false)
-
-                // Reindirizza alla scheda dell'allievo tab Pagamenti (mock path)
-                router.push(`/admin/allievi?id=${idAllievo}&tab=pagamenti`)
-            } else {
-                setError("QR Code non valido. Assicurati che sia una tessera della scuola.")
+        if (!open) {
+            if (scannerRef.current) {
+                scannerRef.current.clear().catch(e => console.error("Failed to clear scanner", e))
+                scannerRef.current = null
             }
+            return
         }
 
-        const onScanFailure = (err: any) => {
-            // Silently fail most frames, log only real errors if needed
-        }
+        // Delay to ensure the DOM element exists inside the Dialog
+        const timer = setTimeout(() => {
+            if (!document.getElementById("reader")) return;
 
-        scanner.render(onScanSuccess, onScanFailure)
+            const scanner = new Html5QrcodeScanner(
+                "reader",
+                {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+                },
+                false
+            )
 
-        // Cleanup on unmount or dialog close
+            scannerRef.current = scanner
+
+            scanner.render(
+                (decodedText) => {
+                    // Cerca di estrarre l'ID, sia se è un URL (nuovo formato) o altro
+                    let idAllievo = null;
+                    try {
+                        if (decodedText.includes('id=')) {
+                            const url = new URL(decodedText);
+                            idAllievo = url.searchParams.get('id');
+                        } else if (decodedText.startsWith("sd-allievo:")) {
+                            idAllievo = decodedText.split(":")[1];
+                        }
+                    } catch (e) {
+                        // Fallback try regex if not a valid url format but contains id=
+                        const match = decodedText.match(/id=([^&]+)/);
+                        if (match) idAllievo = match[1];
+                    }
+
+                    if (idAllievo) {
+                        scanner.clear()
+                        onOpenChange(false)
+                        router.push(`/admin/scanner?id=${idAllievo}`)
+                    } else {
+                        setError("QR Code non valido. Assicurati che sia una tessera della scuola.")
+                    }
+                },
+                (err) => {
+                    // Silently fail most frames
+                }
+            )
+        }, 100)
+
+        // Cleanup on unmount
         return () => {
-            scanner.clear().catch(e => console.error("Failed to clear scanner", e))
+            clearTimeout(timer)
+            if (scannerRef.current) {
+                scannerRef.current.clear().catch(e => console.error("Failed to clear scanner", e))
+                scannerRef.current = null
+            }
         }
     }, [open, router, onOpenChange])
 
