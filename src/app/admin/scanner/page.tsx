@@ -49,6 +49,20 @@ function ScannerContent() {
 
                 if (data) {
                     setAllievo(data)
+
+                    // Controllo se ha già pagato per il mese corrente
+                    const today = new Date()
+                    const meseT = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+
+                    const { data: checkPagamento } = await supabase
+                        .from('pagamenti')
+                        .select('id')
+                        .eq('allievo_id', id)
+                        .eq('mese_riferimento', meseT)
+
+                    if (checkPagamento && checkPagamento.length > 0) {
+                        setPagamentoFatto(true)
+                    }
                 }
             } catch (err) {
                 console.error("Errore fetch scanner:", err)
@@ -103,63 +117,68 @@ function ScannerContent() {
     const totaleDaPagare = allievo.iscrizioni_corsi?.reduce((acc: number, iscr: any) => acc + (iscr.corsi?.prezzo_standard || 0), 0) || 0
 
     return (
-        <div className="max-w-xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <h1 className="text-3xl font-bold tracking-tight">Dati Scansione</h1>
+        <div className="w-full max-w-xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 px-4 pt-6 pb-24 md:pt-10">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-center md:text-left">Esito Scansione</h1>
 
             {pagamentoFatto && (
-                <div className="bg-green-100 dark:bg-green-900 border-l-4 border-green-500 p-4 rounded-md flex items-center gap-3">
-                    <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+                <div className="bg-green-100 dark:bg-green-900 border-l-4 border-green-500 p-4 rounded-xl flex items-start gap-3 shadow-sm">
+                    <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
                     <div>
-                        <p className="font-bold text-green-800 dark:text-green-200">Pagamento Registrato!</p>
-                        <p className="text-green-700 dark:text-green-300 text-sm">L'operazione è stata salvata in contabilità.</p>
+                        <p className="font-bold text-green-800 dark:text-green-200">Quota Mensile Saldata</p>
+                        <p className="text-green-700 dark:text-green-300 text-sm mt-1">Lo studente risulta in regola con i pagamenti per il mese in corso.</p>
                     </div>
                 </div>
             )}
 
-            <Card>
-                <CardHeader>
+            <Card className="shadow-lg border-primary/10 overflow-hidden">
+                <CardHeader className="bg-muted/30 pb-4 border-b">
                     <div className="flex items-center gap-4">
-                        <div className="bg-primary/10 p-4 rounded-full">
-                            <User className="h-8 w-8 text-primary" />
+                        <div className="bg-primary p-3 md:p-4 rounded-full shadow-inner text-primary-foreground">
+                            <User className="h-6 w-6 md:h-8 md:w-8" />
                         </div>
-                        <div>
-                            <CardTitle className="text-2xl">{allievo.cognome} {allievo.nome}</CardTitle>
-                            <CardDescription className="text-base mt-1 text-muted-foreground">Tessera: <strong className="text-foreground">{allievo.tessera_numero}</strong></CardDescription>
+                        <div className="flex-1">
+                            <CardTitle className="text-xl md:text-2xl font-black">{allievo.cognome} {allievo.nome}</CardTitle>
+                            <CardDescription className="text-sm md:text-base mt-1 text-muted-foreground flex flex-col md:flex-row md:items-center gap-1">
+                                <span>Tessera: <strong className="text-foreground">{allievo.tessera_numero}</strong></span>
+                                <span className="hidden md:inline text-muted-foreground/40">•</span>
+                                <span>CF: {allievo.codice_fiscale}</span>
+                            </CardDescription>
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-6 pt-6 px-4 md:px-6">
                     <div>
-                        <h3 className="font-semibold text-lg border-b pb-2 mb-3">Corsi Frequentati</h3>
-                        <ul className="space-y-3">
+                        <h3 className="font-semibold text-base md:text-lg border-b pb-2 mb-3 text-muted-foreground">Pacchetto Corsi Selezionati</h3>
+                        <ul className="space-y-2.5">
                             {allievo.iscrizioni_corsi?.map((iscr: any, i: number) => (
-                                <li key={i} className="flex justify-between items-center bg-muted/50 p-3 rounded-lg border">
-                                    <span className="font-medium">{iscr.corsi.nome}</span>
-                                    <span className="text-muted-foreground">€ {iscr.corsi.prezzo_standard.toFixed(2)}</span>
+                                <li key={i} className="flex justify-between items-center bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-lg shadow-sm">
+                                    <span className="font-medium text-sm md:text-base">{iscr.corsi.nome}</span>
+                                    <span className="text-muted-foreground font-semibold">€ {iscr.corsi.prezzo_standard.toFixed(2)}</span>
                                 </li>
                             ))}
                             {(!allievo.iscrizioni_corsi || allievo.iscrizioni_corsi.length === 0) && (
-                                <li className="text-muted-foreground">Nessun corso attivo</li>
+                                <li className="text-muted-foreground bg-zinc-50 border p-3 rounded-lg text-sm text-center">Nessun corso attivo trovato</li>
                             )}
                         </ul>
                     </div>
 
-                    <div className="bg-primary/5 rounded-xl p-6 border-2 border-primary/20">
-                        <div className="flex justify-between items-center mb-4">
-                            <span className="text-muted-foreground font-medium">Totale da Pagare:</span>
-                            <span className="text-4xl font-black text-primary flex items-center">
-                                <Euro className="h-8 w-8 mr-1" />
+                    <div className="bg-primary/5 rounded-2xl p-5 md:p-6 border-2 border-primary/20 shadow-inner">
+                        <div className="flex justify-between items-end mb-6">
+                            <span className="text-muted-foreground font-semibold text-sm md:text-base uppercase tracking-wider">Totale Mensile</span>
+                            <span className="text-4xl md:text-5xl font-black text-primary flex items-center leading-none tracking-tighter">
+                                <Euro className="h-7 w-7 md:h-10 md:w-10 mr-1 opacity-80" />
                                 {totaleDaPagare.toFixed(2)}
                             </span>
                         </div>
 
                         <Button
-                            className="w-full h-14 text-lg"
+                            className="w-full h-16 text-lg md:text-xl font-bold shadow-lg transition-transform active:scale-95"
                             onClick={handleRegistraPagamento}
                             disabled={pagamentoFatto || totaleDaPagare === 0}
+                            variant={pagamentoFatto ? "secondary" : "default"}
                         >
-                            <CheckCircle2 className="mr-2 h-5 w-5" />
-                            {pagamentoFatto ? "Già Pagato" : "Registra Incasso Manualmente"}
+                            <CheckCircle2 className="mr-2 h-6 w-6 md:h-7 md:w-7" />
+                            {pagamentoFatto ? "Pagato per questo mese" : "Conferma Ricezione Soldi"}
                         </Button>
                     </div>
                 </CardContent>
