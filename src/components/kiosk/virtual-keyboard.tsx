@@ -10,7 +10,18 @@ export function VirtualKeyboard() {
     const focusedInputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
 
     useEffect(() => {
+        // Controllo dispositivo: La tastiera si apre SOLO su tablet/smartphone (dispositivi touch)
+        const isTouchDevice = () => {
+            return (('ontouchstart' in window) ||
+                (navigator.maxTouchPoints > 0) ||
+                // @ts-ignore
+                (navigator.msMaxTouchPoints > 0))
+        }
+
         const handleFocus = (e: FocusEvent) => {
+            // Se NON è un dispositivo touch (es. è un PC col mouse), ignoriamo l'apertura
+            if (!isTouchDevice()) return;
+
             const target = e.target as HTMLElement;
             if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
                 const input = target as HTMLInputElement | HTMLTextAreaElement;

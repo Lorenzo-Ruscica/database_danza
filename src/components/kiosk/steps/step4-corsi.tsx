@@ -1,21 +1,26 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useKioskStore } from "@/store/kiosk-store"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Check, Euro } from "lucide-react"
-
-// Hardcoded for kiosk frontend mock - real data will be fetched from Supabase
-const CORSI_DISPONIBILI = [
-    { id: "1", nome: "Danza Classica - Principianti (6-8 anni)", prezzo: 50.00 },
-    { id: "2", nome: "Hip Hop - Principianti", prezzo: 60.00 },
-    { id: "3", nome: "Hip Hop - Avanzato", prezzo: 65.00 },
-    { id: "4", nome: "Ballo da Sala - Base", prezzo: 80.00 },
-    { id: "5", nome: "Ginnastica Dolce", prezzo: 40.00 }
-]
+import { Check, Euro, Loader2 } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 export default function Step4Corsi() {
     const { corsi, totalePrezzo, toggleCorso, nextStep, prevStep } = useKioskStore()
+    const [corsiDisponibili, setCorsiDisponibili] = useState<any[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+    const supabase = createClient()
+
+    useEffect(() => {
+        const fetchCorsi = async () => {
+            const { data, error } = await supabase.from('corsi').select('*').order('nome')
+            if (data) setCorsiDisponibili(data)
+            setIsLoading(false)
+        }
+        fetchCorsi()
+    }, [supabase])
 
     const isFormValid = corsi.length > 0
 
@@ -27,17 +32,22 @@ export default function Step4Corsi() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-2 pb-2">
-                {CORSI_DISPONIBILI.map((corso) => {
+                {isLoading ? (
+                    <div className="col-span-full flex flex-col items-center justify-center p-8 gap-4 text-muted-foreground">
+                        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                        <p>Caricamento corsi disponibili...</p>
+                    </div>
+                ) : corsiDisponibili.map((corso) => {
                     const isSelected = corsi.includes(corso.id)
 
                     return (
                         <Card
                             key={corso.id}
                             className={`cursor-pointer transition-all active:scale-95 border-2 ${isSelected
-                                    ? 'bg-primary/5 border-primary shadow-md'
-                                    : 'bg-card border-border hover:border-primary/50'
+                                ? 'bg-primary/5 border-primary shadow-md'
+                                : 'bg-card border-border hover:border-primary/50'
                                 }`}
-                            onClick={() => toggleCorso(corso.id, corso.prezzo)}
+                            onClick={() => toggleCorso(corso.id, corso.prezzo_standard)}
                         >
                             <CardContent className="flex items-center justify-between p-6">
                                 <div className="space-y-1">
@@ -46,7 +56,7 @@ export default function Step4Corsi() {
                                     </h3>
                                     <div className="flex items-center text-muted-foreground font-medium text-lg">
                                         <Euro className="h-4 w-4 mr-1" />
-                                        {corso.prezzo.toFixed(2)}/mese
+                                        {corso.prezzo_standard.toFixed(2)}/mese
                                     </div>
                                 </div>
 
