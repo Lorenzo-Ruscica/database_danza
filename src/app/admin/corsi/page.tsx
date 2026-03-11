@@ -6,6 +6,17 @@ import { Plus, Search, Users, Euro, Loader2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog"
 import {
     Table,
     TableBody,
@@ -21,6 +32,11 @@ export default function CorsiPage() {
     const [corsi, setCorsi] = useState<(Corso & { iscritti_count: number })[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
+
+    // Add Course Form State
+    const [isAddOpen, setIsAddOpen] = useState(false)
+    const [newCorso, setNewCorso] = useState({ nome: '', descrizione: '', prezzo_standard: 0 })
+    const [isSaving, setIsSaving] = useState(false)
 
     const supabase = createClient()
 
@@ -60,17 +76,112 @@ export default function CorsiPage() {
         fetchCorsi()
     }, [])
 
+    const handleAddCorso = async () => {
+        if (!newCorso.nome || newCorso.prezzo_standard < 0) return;
+
+        setIsSaving(true)
+        try {
+            const { data, error } = await supabase.from('corsi').insert([{
+                nome: newCorso.nome,
+                descrizione: newCorso.descrizione,
+                prezzo_standard: newCorso.prezzo_standard
+            }]).select()
+
+            if (error) throw error
+
+            if (data && data.length > 0) {
+                // Add to local state
+                const addedCorso = {
+                    id: data[0].id,
+                    nome: data[0].nome,
+                    prezzo_mensile: data[0].prezzo_standard,
+                    descrizione: data[0].descrizione,
+                    iscritti_count: 0
+                };
+                setCorsi([...corsi, addedCorso].sort((a, b) => a.nome.localeCompare(b.nome)))
+                setIsAddOpen(false)
+                setNewCorso({ nome: '', descrizione: '', prezzo_standard: 0 })
+            }
+        } catch (err) {
+            console.error("Errore salvataggio corso:", err)
+            alert("Errore durante il salvataggio del corso.")
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
     const filteredCorsi = corsi.filter(c =>
         c.nome.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
     return (
         <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <h1 className="text-3xl font-bold tracking-tight">Gestione Corsi</h1>
-                <Button>
-                    <Plus className="mr-2 h-4 w-4" /> Nuovo Corso
-                </Button>
+
+                <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+                    <DialogTrigger asChild>
+                        <Button className="w-full sm:w-auto">
+                            <Plus className="mr-2 h-4 w-4" /> Nuovo Corso
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[425px]">
+                        <DialogHeader>
+                            <DialogTitle>Aggiungi Nuovo Corso</DialogTitle>
+                            <DialogDescription>
+                                Inserisci i dettagli del nuovo corso. Clicca salva quando hai finito. Questo corso apparirà nei moduli iscrizione.
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="nome" className="text-right">
+                                    Nome *
+                                </Label>
+                                <Input
+                                    id="nome"
+                                    placeholder="Es. Hip Hop Avanzato"
+                                    className="col-span-3"
+                                    value={newCorso.nome}
+                                    onChange={(e) => setNewCorso({ ...newCorso, nome: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="prezzo" className="text-right">
+                                    PrezzoMensile
+                                </Label>
+                                <Input
+                                    id="prezzo"
+                                    type="number"
+                                    placeholder="50.00"
+                                    className="col-span-3"
+                                    value={newCorso.prezzo_standard || ''}
+                                    onChange={(e) => setNewCorso({ ...newCorso, prezzo_standard: parseFloat(e.target.value) || 0 })}
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-start gap-4">
+                                <Label htmlFor="descrizione" className="text-right mt-2">
+                                    Descrizione
+                                </Label>
+                                <Textarea
+                                    id="descrizione"
+                                    placeholder="Opzionale"
+                                    className="col-span-3"
+                                    value={newCorso.descrizione}
+                                    onChange={(e) => setNewCorso({ ...newCorso, descrizione: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button
+                                type="submit"
+                                onClick={handleAddCorso}
+                                disabled={isSaving || !newCorso.nome}
+                            >
+                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salva Corso"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">

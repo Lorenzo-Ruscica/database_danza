@@ -11,7 +11,8 @@ import Step6Certificato from "@/components/kiosk/steps/step6-certificato"
 import { SuccessTotem } from "@/components/kiosk/success-totem"
 import { InactivityTimer } from "@/components/kiosk/inactivity-timer"
 import { VirtualKeyboard } from "@/components/kiosk/virtual-keyboard"
-import { Moon, Sun } from "lucide-react"
+import { Moon, Sun, Lock } from "lucide-react"
+import Link from "next/link"
 
 export default function KioskPage() {
   const { step, anagrafica, resetForm } = useKioskStore()
@@ -97,6 +98,15 @@ export default function KioskPage() {
 
       {/* Header Totem */}
       <header className="relative z-10 py-10 px-8 flex flex-col items-center animate-fade-in-up-soft" style={{ animationDelay: '0.1s' }}>
+
+        {/* Admin Access Button (Top Left) */}
+        <Link
+          href="/admin"
+          className={`absolute top-6 left-8 p-3 rounded-full transition-all duration-300 z-50 hover:scale-110 active:scale-95 ${isDark ? 'bg-white/5 hover:bg-white/10 text-white/50 hover:text-white' : 'bg-black/5 hover:bg-black/10 text-black/50 hover:text-black'}`}
+          title="Area Riservata Admin"
+        >
+          <Lock className="w-5 h-5" />
+        </Link>
 
         <button
           onClick={() => setIsDark(!isDark)}
