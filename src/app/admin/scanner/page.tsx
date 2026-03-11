@@ -1,13 +1,15 @@
 "use client"
 
-import { useEffect, useState, Suspense } from "react" // Aggiunto Suspense
+import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, AlertCircle, Euro, User, Loader2 } from "lucide-react"
 
-// Spostiamo la logica in un componente interno
+// FORZA IL RENDERING DINAMICO: Risolve l'errore "Command npm run build exited with 1" su Vercel
+export const dynamic = 'force-dynamic';
+
 function ScannerContent() {
     const searchParams = useSearchParams()
     const id = searchParams.get('id')
@@ -24,6 +26,7 @@ function ScannerContent() {
                 return
             }
             try {
+                // Preleva l'allievo e i suoi corsi tramite la tabella ponte iscrizioni_corsi
                 const { data, error } = await supabase
                     .from('allievi')
                     .select(`
@@ -54,7 +57,7 @@ function ScannerContent() {
             }
         }
         fetchStudente()
-    }, [id, supabase]) // Aggiunto supabase alle dipendenze per best practice
+    }, [id, supabase])
 
     const handleRegistraPagamento = async () => {
         if (!allievo) return
@@ -165,7 +168,6 @@ function ScannerContent() {
     )
 }
 
-// Il default export avvolge tutto in Suspense per Vercel
 export default function ScannerPage() {
     return (
         <Suspense fallback={
