@@ -1,13 +1,14 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react" // Aggiunto Suspense
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, AlertCircle, Euro, User, Loader2 } from "lucide-react"
 
-export default function ScannerPage() {
+// Spostiamo la logica in un componente interno
+function ScannerContent() {
     const searchParams = useSearchParams()
     const id = searchParams.get('id')
     const supabase = createClient()
@@ -23,7 +24,6 @@ export default function ScannerPage() {
                 return
             }
             try {
-                // Preleva l'allievo e i suoi corsi tramite la tabella ponte iscrizioni_corsi
                 const { data, error } = await supabase
                     .from('allievi')
                     .select(`
@@ -54,7 +54,7 @@ export default function ScannerPage() {
             }
         }
         fetchStudente()
-    }, [id])
+    }, [id, supabase]) // Aggiunto supabase alle dipendenze per best practice
 
     const handleRegistraPagamento = async () => {
         if (!allievo) return
@@ -162,5 +162,18 @@ export default function ScannerPage() {
                 </CardContent>
             </Card>
         </div>
+    )
+}
+
+// Il default export avvolge tutto in Suspense per Vercel
+export default function ScannerPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex h-[50vh] items-center justify-center">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            </div>
+        }>
+            <ScannerContent />
+        </Suspense>
     )
 }
