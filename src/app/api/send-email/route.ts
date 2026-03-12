@@ -36,7 +36,7 @@ export async function POST(req: Request) {
         const mailOptions = {
             from: `"Scuola di Danza" <${process.env.SMTP_USER}>`,
             to: email,
-            subject: 'Iscrizione Completata con Successo - La tua Tessera Digitale 🎉',
+            subject: 'Iscrizione Completata con Successo - La tua Tessera Digitale',
             html: `
             <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 0;">
                 
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
 
                 <!-- BODY -->
                 <div style="padding: 40px 30px; background-color: #ffffff; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
-                    <h2 style="color: #1e293b; font-size: 22px; margin-top: 0;">Benvenuto/a ${nome}! 🕺💃</h2>
+                    <h2 style="color: #1e293b; font-size: 22px; margin-top: 0;">Benvenuto/a ${nome}!</h2>
                     <p style="color: #475569; font-size: 16px; line-height: 1.6;">
                         Siamo felicissimi di confermare la tua avvenuta registrazione. Di seguito trovi il riepilogo dei tuoi dati e la tua nuova Tessera Digitale personale.
                     </p>
