@@ -1,8 +1,7 @@
     "use client"
 
-import { QRCodeSVG } from "qrcode.react"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, Wallet, Download } from "lucide-react"
+import { CheckCircle2, MailCheck } from "lucide-react"
 
 interface SuccessTotemProps {
     allievoId: string
@@ -25,35 +24,17 @@ export function SuccessTotem({ allievoId, nome, tesseraNumero, onReset }: Succes
                 </p>
             </div>
 
-            <div className="bg-zinc-50 border-2 border-zinc-200 rounded-3xl p-8 flex flex-col items-center gap-6 shadow-sm w-full max-w-sm">
-                <div className="space-y-1">
-                    <p className="font-semibold text-zinc-500 uppercase tracking-widest text-sm">Numero Tessera</p>
-                    <p className="text-3xl font-mono font-bold text-primary">{tesseraNumero}</p>
+            <div className="bg-zinc-50 border-2 border-zinc-200 rounded-3xl p-8 flex flex-col items-center gap-6 shadow-sm w-full max-w-sm mt-4">
+                <MailCheck className="w-16 h-16 text-primary opacity-80" />
+                <div className="space-y-4">
+                    <h3 className="text-xl font-bold text-zinc-900">Email Inviata!</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                        Ti abbiamo appena inviato un'email all'indirizzo fornito.
+                    </p>
+                    <p className="text-sm font-semibold text-primary mt-4 p-4 bg-primary/5 rounded-xl border border-primary/20">
+                        📱 Controlla la tua casella di posta per visualizzare subito il tuo <span className="font-bold uppercase tracking-wider">QR Code Provvisorio</span> da mostrare in Segreteria!
+                    </p>
                 </div>
-
-                <div className="bg-white p-4 rounded-xl shadow-sm border border-zinc-100">
-                    <QRCodeSVG
-                        value={`sd-allievo:${allievoId}`}
-                        size={200}
-                        level="H"
-                        includeMargin={true}
-                    />
-                </div>
-
-                <p className="text-sm text-muted-foreground">
-                    Mostra questo QR Code in segreteria per il pagamento o per smarcare la presenza veloce.
-                </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 w-full max-w-md mt-4">
-                <Button className="flex-1 h-14 text-lg bg-black hover:bg-zinc-800 text-white rounded-xl">
-                    <Wallet className="mr-2 h-5 w-5" />
-                    Aggiungi a Wallet
-                </Button>
-                <Button variant="outline" className="flex-1 h-14 text-lg border-2 rounded-xl">
-                    <Download className="mr-2 h-5 w-5" />
-                    Salva PDF
-                </Button>
             </div>
 
             <Button
