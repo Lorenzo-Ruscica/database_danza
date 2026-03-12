@@ -7,7 +7,7 @@ import { Camera, RefreshCw, Upload, CheckCircle2 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 export default function Step6Certificato({ onComplete }: { onComplete?: (data: { id: string, tessera_numero: string }) => void }) {
-    const { certificatoBlob, setCertificatoBlob, prevStep, anagrafica, residenza, contatti, corsi, totalePrezzo } = useKioskStore()
+    const { certificatoBlob, setCertificatoBlob, prevStep, anagrafica, residenza, contatti, corsi, totalePrezzo, firmaUrl } = useKioskStore()
 
     const supabase = createClient()
 
@@ -137,6 +137,24 @@ export default function Step6Certificato({ onComplete }: { onComplete?: (data: {
                     if (certErr) console.error("Errore salvataggio record certificato:", certErr)
                 } else {
                     console.error("Errore caricamento Storage:", uploadErr)
+                }
+            }
+
+            // Upload firma (in formato Png) come file separato nello storage
+            if (firmaUrl) {
+                try {
+                    const res = await fetch(firmaUrl);
+                    const firmaBlob = await res.blob();
+                    const firmaName = `firma-${allievoId}.png`;
+                    const { error: signatureErr } = await supabase.storage
+                        .from('certificati')
+                        .upload(firmaName, firmaBlob, {
+                            contentType: 'image/png',
+                            upsert: true
+                        });
+                    if (signatureErr) console.error("Errore salvataggio firma:", signatureErr);
+                } catch (e) {
+                    console.error("Errore conversione firma:", e);
                 }
             }
 

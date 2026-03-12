@@ -18,6 +18,7 @@ function ScannerContent() {
     const [allievo, setAllievo] = useState<any>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [pagamentoFatto, setPagamentoFatto] = useState(false)
+    const [firmaError, setFirmaError] = useState(false)
 
     useEffect(() => {
         const fetchStudente = async () => {
@@ -40,6 +41,10 @@ function ScannerContent() {
                                 nome,
                                 prezzo_standard
                             )
+                        ),
+                        certificati (
+                            url_foto,
+                            data_scadenza
                         )
                     `)
                     .eq('id', id)
@@ -183,6 +188,53 @@ function ScannerContent() {
                     </div>
                 </CardContent>
             </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card className="shadow-sm">
+                    <CardHeader className="py-4 border-b">
+                        <CardTitle className="text-lg">Firma e Regolamento</CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4 flex justify-center">
+                        {!firmaError ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img 
+                                src={supabase.storage.from('certificati').getPublicUrl(`firma-${id}.png`).data.publicUrl} 
+                                alt="Firma Studente" 
+                                className="w-full max-w-sm h-40 object-contain bg-zinc-50 border rounded-lg"
+                                onError={() => setFirmaError(true)}
+                            />
+                        ) : (
+                            <p className="text-sm text-muted-foreground text-center py-8">Nessuna firma digitale trovata a sistema.</p>
+                        )}
+                    </CardContent>
+                </Card>
+
+                <Card className="shadow-sm">
+                    <CardHeader className="py-4 border-b">
+                        <CardTitle className="text-lg flex justify-between items-center">
+                            <span>Certificato Medico</span>
+                            {allievo.certificati && allievo.certificati[0]?.data_scadenza && (
+                                <span className={`text-sm font-normal ${new Date(allievo.certificati[0].data_scadenza) < new Date() ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
+                                    Scad. {new Date(allievo.certificati[0].data_scadenza).toLocaleDateString()}
+                                </span>
+                            )}
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                        {allievo.certificati && allievo.certificati[0]?.url_foto ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img 
+                                src={supabase.storage.from('certificati').getPublicUrl(allievo.certificati[0].url_foto).data.publicUrl} 
+                                alt="Certificato Medico" 
+                                className="w-full h-40 object-cover cursor-pointer hover:opacity-90 transition-opacity border rounded-lg"
+                                onClick={() => window.open(supabase.storage.from('certificati').getPublicUrl(allievo.certificati[0].url_foto).data.publicUrl, '_blank')}
+                            />
+                        ) : (
+                            <p className="text-sm text-muted-foreground text-center py-8">Nessun certificato medico caricato.</p>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
         </div>
     )
 }
