@@ -241,7 +241,7 @@ function ScannerContent() {
                         {!firmaError ? (
                             /* eslint-disable-next-line @next/next/no-img-element */
                             <img 
-                                src={supabase.storage.from('certificati').getPublicUrl(`firma-${id}.png`).data.publicUrl} 
+                                src={supabase.storage.from('firme').getPublicUrl(`firma-${id}.png`).data.publicUrl} 
                                 alt="Firma Studente" 
                                 className="w-full max-w-sm h-40 object-contain bg-zinc-50 border rounded-lg"
                                 onError={() => setFirmaError(true)}

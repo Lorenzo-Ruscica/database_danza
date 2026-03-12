@@ -140,21 +140,34 @@ export default function Step6Certificato({ onComplete }: { onComplete?: (data: {
                 }
             }
 
-            // Upload firma (in formato Png) come file separato nello storage
+            // Upload firma (in formato Png) in un bucket separato "firme"
             if (firmaUrl) {
                 try {
-                    const res = await fetch(firmaUrl);
-                    const firmaBlob = await res.blob();
+                    // Costruisce il Blob a mano (più sicuro rispetto a fetch() che su alcuni browser blocca le stringhe base64)
+                    const base64Data = firmaUrl.split(',')[1];
+                    const byteCharacters = atob(base64Data);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const firmaBlob = new Blob([byteArray], { type: 'image/png' });
+
                     const firmaName = `firma-${allievoId}.png`;
                     const { error: signatureErr } = await supabase.storage
-                        .from('certificati')
+                        .from('firme') // <--- Usa il bucket 'firme'
                         .upload(firmaName, firmaBlob, {
                             contentType: 'image/png',
                             upsert: true
                         });
-                    if (signatureErr) console.error("Errore salvataggio firma:", signatureErr);
-                } catch (e) {
+                        
+                    if (signatureErr) {
+                        console.error("Errore salvataggio firma:", signatureErr);
+                        alert("Attenzione: La firma digitale non è stata salvata correttamente. Errore: " + signatureErr.message);
+                    }
+                } catch (e: any) {
                     console.error("Errore conversione firma:", e);
+                    alert("Attenzione: Impossibile convertire la firma digitale per il salvataggio.");
                 }
             }
 
