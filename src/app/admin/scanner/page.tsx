@@ -36,6 +36,18 @@ function ScannerContent() {
                         cognome,
                         tessera_numero,
                         codice_fiscale,
+                        data_nascita,
+                        luogo_nascita,
+                        provincia_nascita,
+                        indirizzo_residenza,
+                        cap_residenza,
+                        provincia_residenza,
+                        email,
+                        telefono,
+                        is_minore,
+                        tutore_nome,
+                        tutore_cognome,
+                        tutore_codice_fiscale,
                         iscrizioni_corsi (
                             corsi (
                                 nome,
@@ -186,6 +198,37 @@ function ScannerContent() {
                             {pagamentoFatto ? "Pagato per questo mese" : "Conferma Ricezione Soldi"}
                         </Button>
                     </div>
+                </CardContent>
+            </Card>
+
+            <Card className="shadow-sm">
+                <CardHeader className="py-4 border-b">
+                    <CardTitle className="text-lg">Dati Anagrafici e Contatti</CardTitle>
+                </CardHeader>
+                <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                    <div>
+                        <p className="text-sm font-semibold text-muted-foreground">Data e Luogo di Nascita</p>
+                        <p className="font-medium">{new Date(allievo.data_nascita).toLocaleDateString()} a {allievo.luogo_nascita} ({allievo.provincia_nascita})</p>
+                    </div>
+                    <div>
+                        <p className="text-sm font-semibold text-muted-foreground">Residenza</p>
+                        <p className="font-medium">{allievo.indirizzo_residenza}, {allievo.cap_residenza} - {allievo.provincia_residenza}</p>
+                    </div>
+                    <div>
+                        <p className="text-sm font-semibold text-muted-foreground">Email</p>
+                        <p className="font-medium">{allievo.email || 'Non fornita'}</p>
+                    </div>
+                    <div>
+                        <p className="text-sm font-semibold text-muted-foreground">Telefono</p>
+                        <p className="font-medium">{allievo.telefono || 'Non fornito'}</p>
+                    </div>
+                    {allievo.is_minore && (
+                        <div className="md:col-span-2 mt-2 bg-muted/50 p-3 rounded-md border">
+                            <p className="text-sm font-semibold text-muted-foreground mb-1">Dati Tutore Legale</p>
+                            <p className="font-medium">{allievo.tutore_nome} {allievo.tutore_cognome}</p>
+                            <p className="text-sm">CF: {allievo.tutore_codice_fiscale}</p>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
