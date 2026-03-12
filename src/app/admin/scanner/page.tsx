@@ -133,9 +133,10 @@ function ScannerContent() {
                  alert("Pagamento registrato con successo! L'allievo tuttavia non ha una email associata a cui spedire la tessera.");
             }
 
-        } catch (err) {
+        } catch (err: any) {
             console.error("Errore registrazione pagamento:", err)
-            alert("Errore durante la registrazione del pagamento.")
+            const errorMsg = err?.message || JSON.stringify(err) || "Errore sconosciuto";
+            alert("Errore durante la registrazione del pagamento su Supabase: " + errorMsg)
         }
     }
 
