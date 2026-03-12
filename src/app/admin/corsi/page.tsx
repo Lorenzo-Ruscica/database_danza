@@ -25,7 +25,7 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Corso } from "@/types/database"
 
 export default function CorsiPage() {
@@ -58,7 +58,7 @@ export default function CorsiPage() {
                 if (error) throw error;
 
                 if (data) {
-                    const mappedCorsi = data.map((d: any) => ({
+                    const mappedCorsi = data.map((d) => ({
                         id: d.id,
                         nome: d.nome,
                         prezzo_mensile: d.prezzo_standard || 0,
@@ -74,7 +74,7 @@ export default function CorsiPage() {
             }
         }
         fetchCorsi()
-    }, [])
+    }, [supabase])
 
     const handleAddCorso = async () => {
         if (!newCorso.nome || newCorso.prezzo_standard < 0) return;
@@ -104,7 +104,7 @@ export default function CorsiPage() {
             }
         } catch (err) {
             console.error("Errore salvataggio corso:", err)
-            alert("Errore durante il salvataggio del corso.")
+            alert("Errore durante il salvataggio del corso: " + (err instanceof Error ? err.message : JSON.stringify(err)))
         } finally {
             setIsSaving(false)
         }
