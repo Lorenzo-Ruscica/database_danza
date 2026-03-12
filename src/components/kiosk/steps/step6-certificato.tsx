@@ -181,7 +181,6 @@ export default function Step6Certificato({ onComplete }: { onComplete?: (data: {
                     console.error("Errore invio email:", emailErr)
                 }
             }
-
             // 5. Fine & passaggio alla schermata di successo
             setIsCapturing(false)
             if (onComplete) {
@@ -190,9 +189,10 @@ export default function Step6Certificato({ onComplete }: { onComplete?: (data: {
                 alert(`Iscrizione completata per ${anagrafica.nome}!`)
                 window.location.reload()
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error("Detailed insert error:", error)
-            alert("Si è verificato un errore durante l'iscrizione. Controlla che i dati (es. codice fiscale) non siano già registrati.")
+            const errorMsg = error?.message || JSON.stringify(error) || "Errore non noto";
+            alert("Si è verificato un errore durante l'iscrizione sul server Supabase: " + errorMsg)
             setIsCapturing(false)
         }
     }
