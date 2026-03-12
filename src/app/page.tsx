@@ -73,27 +73,17 @@ export default function KioskPage() {
   return (
     <div className={`min-h-screen flex flex-col font-sans selection:bg-black/10 selection:dark:bg-white/20 relative overflow-hidden transition-colors duration-500 ${isDark ? "dark bg-[#0a0a0a] text-white" : "bg-white text-black"}`}>
 
-      {/* Elegant Black & White Dance-Inspired Background */}
-      {/* Sweeping curves and soft blurred spots representing movement & stage lighting */}
-      <div className={`absolute top-[-20%] left-[-10%] w-[50%] h-[50%] blur-[150px] rounded-[100%] pointer-events-none animate-float-1 ${isDark ? "bg-white/[0.05]" : "bg-black/[0.03]"}`} />
-      <div className={`absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] blur-[120px] rounded-[100%] pointer-events-none animate-float-2 ${isDark ? "bg-white/[0.05]" : "bg-black/[0.04]"}`} />
+      {/* Elegant Dynamic Minimalist Background */}
+      <div className={`absolute inset-0 transition-opacity duration-1000 -z-10 animate-gradient-slow ${isDark ? 'bg-gradient-to-br from-[#050505] via-[#0f0f0f] to-[#000000]' : 'bg-gradient-to-br from-zinc-50 via-gray-100 to-zinc-200'}`} />
+
+      {/* Floating Soft Ambient Lights */}
+      <div className={`absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] blur-[120px] rounded-[100%] pointer-events-none animate-float-1 mix-blend-screen opacity-60 ${isDark ? "bg-white/[0.03]" : "bg-black/[0.04]"}`} />
+      <div className={`absolute bottom-[-10%] right-[-10%] w-[55vw] h-[55vw] blur-[140px] rounded-[100%] pointer-events-none animate-float-2 mix-blend-screen opacity-60 ${isDark ? "bg-white/[0.02]" : "bg-black/[0.03]"}`} />
+      <div className={`absolute top-[30%] left-[60%] w-[35vw] h-[35vw] blur-[100px] rounded-full pointer-events-none animate-float-1 opacity-50 ${isDark ? "bg-zinc-800/[0.2]" : "bg-zinc-400/[0.15]"}`} style={{ animationDelay: '-8s', animationDuration: '25s' }} />
 
       {/* Global Kiosk Interactions */}
       <InactivityTimer onTimeout={handleReset} />
       <VirtualKeyboard />
-
-      {/* SVG Decorative Dance Ribbons */}
-      <svg className={`absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-500 -z-0 ${isDark ? "opacity-10" : "opacity-[0.06]"}`} preserveAspectRatio="none" viewBox="0 0 1000 1000">
-        {/* Ribbon 1: The Leap */}
-        <path className="animate-ribbon" style={{ animationDelay: '0s' }} fill="none" stroke={isDark ? "white" : "black"} strokeWidth="1.5" strokeLinecap="round" d="M -100,800 C 200,900 400,200 600,300 S 800,-100 1100,100" />
-        <path className="animate-ribbon" style={{ animationDelay: '2s' }} fill="none" stroke={isDark ? "white" : "black"} strokeWidth="0.5" strokeLinecap="round" d="M -100,820 C 180,920 420,180 620,320 S 780,-80 1100,120" />
-
-        {/* Ribbon 2: The Pirouette */}
-        <path className="animate-ribbon" style={{ animationDelay: '5s' }} fill="none" stroke={isDark ? "white" : "black"} strokeWidth="1" strokeLinecap="round" d="M 1100,700 C 700,800 600,400 300,600 C 100,733 -50,500 -100,400" />
-
-        {/* Ribbon 3: The Flow */}
-        <path className="animate-float-2" fill="none" stroke={isDark ? "white" : "black"} strokeWidth="0.2" d="M -100,500 Q 250,200 500,500 T 1100,500" />
-      </svg>
 
 
       {/* Header Totem */}
@@ -145,12 +135,12 @@ export default function KioskPage() {
 
       {/* Main Content Area (ottimizzato Touch) */}
       <main className="flex-1 overflow-auto p-4 md:p-8 flex justify-center items-start pb-24 relative z-10 animate-fade-in-up-soft" style={{ animationDelay: '0.3s' }}>
-        <div className={`w-full max-w-5xl backdrop-blur-3xl rounded-[2.5rem] p-8 md:p-12 border relative overflow-hidden transition-all duration-700 ${isDark ? "bg-white/5 border-white/10 text-white shadow-[0_20px_60px_-15px_rgba(255,255,255,0.05)] hover:shadow-[0_30px_70px_-15px_rgba(255,255,255,0.08)]" : "bg-white/80 border-black/10 text-black shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] hover:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.12)]"}`}>
+        <div className={`w-full max-w-5xl backdrop-blur-3xl rounded-[2.5rem] p-8 md:p-12 border relative overflow-hidden transition-all duration-1000 transform hover:scale-[1.005] ${isDark ? "bg-white/5 border-white/10 text-white shadow-[0_20px_60px_-15px_rgba(255,255,255,0.05)]" : "bg-white/80 border-black/10 text-black shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)]"}`}>
           {/* Subtle inner reflection */}
           <div className={`absolute inset-x-0 top-0 h-px w-full bg-gradient-to-r from-transparent to-transparent ${isDark ? "via-white/20" : "via-black/20"}`} />
 
-          <div className="relative z-10" key={`step-${step}`}>
-            <div className="animate-fade-in-up-soft" style={{ animationDuration: '0.5s' }}>
+          <div className="relative z-10 transition-transform duration-500 ease-out" key={`step-${step}`}>
+            <div className="animate-fade-in-up-soft" style={{ animationDuration: '0.6s' }}>
               {renderStep()}
             </div>
           </div>
