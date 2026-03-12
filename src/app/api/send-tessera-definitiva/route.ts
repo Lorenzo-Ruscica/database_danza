@@ -49,7 +49,7 @@ export async function POST(req: Request) {
                 <div style="padding: 40px 30px; background-color: #ffffff; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
                     <h2 style="color: #1e293b; font-size: 22px; margin-top: 0;">Ciao ${nome}!</h2>
                     <p style="color: #475569; font-size: 16px; line-height: 1.6;">
-                        Questa email conferma che <b>il tuo pagamento è andato a buon fine</b>. Ti ringraziamo! 🎉
+                        Questa email conferma che <b>il tuo pagamento è andato a buon fine</b>. Ti ringraziamo!
                         Di seguito trovi la tua Tessera per entrare ai corsi della nostra scuola, comodamente dal tuo smartphone.
                     </p>
 
@@ -59,6 +59,19 @@ export async function POST(req: Request) {
                         <img src="cid:qrcode" alt="QR Code Tessera" style="width: 200px; height: 200px; display: block; margin: 15px auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-radius: 8px;" />
                         <div style="font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: 2px;">
                             ${tessera_numero}
+                        </div>
+                        
+                        <!-- WALLET BUTTONS -->
+                        <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                            <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Aggiungi la tessera al tuo wallet digitale (Disponibile a breve):</p>
+                            <div style="text-align: center;">
+                                <a href="#" style="display: inline-block; margin: 0 5px; text-decoration: none;">
+                                    <img src="https://upload.wikimedia.org/wikipedia/commons/archive/c/cb/20230222091218%21Google_Wallet_Add_to_button.svg" alt="Add to Google Wallet" style="height: 44px; width: auto; border-radius: 6px;" />
+                                </a>
+                                <a href="#" style="display: inline-block; margin: 0 5px; text-decoration: none;">
+                                    <img src="https://developer.apple.com/wallet/images/localized/en_US/Add_to_Apple_Wallet_Badge.svg" alt="Add to Apple Wallet" style="height: 44px; width: auto; border-radius: 6px;" />
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
