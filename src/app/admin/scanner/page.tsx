@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, AlertCircle, Euro, User, Loader2 } from "lucide-react"
+import { CheckCircle2, AlertCircle, Euro, User, Loader2, Download } from "lucide-react"
 
 // FORZA IL RENDERING DINAMICO: Risolve l'errore "Command npm run build exited with 1" su Vercel
 export const dynamic = 'force-dynamic';
@@ -188,6 +188,16 @@ function ScannerContent() {
                                 <span className="hidden md:inline text-muted-foreground/40">•</span>
                                 <span>CF: {allievo.codice_fiscale}</span>
                             </CardDescription>
+                            {allievo.is_minore && (
+                                <div className="mt-3 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200 p-2.5 rounded-md border-l-4 border-amber-500 text-sm shadow-sm flex items-start gap-2">
+                                    <User className="h-4 w-4 mt-0.5 shrink-0 opacity-70" />
+                                    <div>
+                                        <span className="font-bold block uppercase text-[10px] tracking-wider opacity-80 mb-0.5">Studente Minorenne - Tutore Legale:</span>
+                                        <span className="font-semibold text-base">{allievo.tutore_nome} {allievo.tutore_cognome}</span>
+                                        <span className="block text-xs mt-0.5 opacity-90">CF: {allievo.tutore_codice_fiscale}</span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </CardHeader>
@@ -262,8 +272,35 @@ function ScannerContent() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Card className="shadow-sm">
-                    <CardHeader className="py-4 border-b">
+                    <CardHeader className="py-4 border-b flex flex-row items-center justify-between">
                         <CardTitle className="text-lg">Firma e Regolamento</CardTitle>
+                        {!firmaError && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 gap-1.5 align-middle"
+                                onClick={async () => {
+                                    const imgUrl = supabase.storage.from('firme').getPublicUrl(`firma-${id}.png`).data.publicUrl;
+                                    try {
+                                        const response = await fetch(imgUrl);
+                                        const blob = await response.blob();
+                                        const downloadUrl = window.URL.createObjectURL(blob);
+                                        const link = document.createElement('a');
+                                        link.href = downloadUrl;
+                                        link.download = `Firma_${allievo.nome}_${allievo.cognome}.png`;
+                                        document.body.appendChild(link);
+                                        link.click();
+                                        document.body.removeChild(link);
+                                        window.URL.revokeObjectURL(downloadUrl);
+                                    } catch (e) {
+                                        console.error("Download fallito, apro in nuova tab", e);
+                                        window.open(imgUrl, '_blank');
+                                    }
+                                }}
+                            >
+                                <Download className="h-3.5 w-3.5" /> Scarica
+                            </Button>
+                        )}
                     </CardHeader>
                     <CardContent className="pt-4 flex justify-center">
                         {!firmaError ? (
@@ -282,14 +319,43 @@ function ScannerContent() {
 
                 <Card className="shadow-sm">
                     <CardHeader className="py-4 border-b">
-                        <CardTitle className="text-lg flex justify-between items-center">
-                            <span>Certificato Medico</span>
-                            {allievo.certificati && allievo.certificati[0]?.data_scadenza && (
-                                <span className={`text-sm font-normal ${new Date(allievo.certificati[0].data_scadenza) < new Date() ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
-                                    Scad. {new Date(allievo.certificati[0].data_scadenza).toLocaleDateString()}
-                                </span>
+                        <div className="flex justify-between items-center w-full">
+                            <CardTitle className="text-lg flex flex-wrap sm:items-center gap-2">
+                                <span>Certificato Medico</span>
+                                {allievo.certificati && allievo.certificati[0]?.data_scadenza && (
+                                    <span className={`text-sm font-normal ${new Date(allievo.certificati[0].data_scadenza) < new Date() ? 'text-destructive font-bold' : 'text-muted-foreground'}`}>
+                                        Scad. {new Date(allievo.certificati[0].data_scadenza).toLocaleDateString()}
+                                    </span>
+                                )}
+                            </CardTitle>
+                            {allievo.certificati && allievo.certificati[0]?.url_foto && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-8 gap-1.5"
+                                    onClick={async () => {
+                                        const imgUrl = supabase.storage.from('certificati').getPublicUrl(allievo.certificati[0].url_foto).data.publicUrl;
+                                        try {
+                                            const response = await fetch(imgUrl);
+                                            const blob = await response.blob();
+                                            const downloadUrl = window.URL.createObjectURL(blob);
+                                            const link = document.createElement('a');
+                                            link.href = downloadUrl;
+                                            link.download = `Certificato_${allievo.nome}_${allievo.cognome}.png`; // Try saving as image
+                                            document.body.appendChild(link);
+                                            link.click();
+                                            document.body.removeChild(link);
+                                            window.URL.revokeObjectURL(downloadUrl);
+                                        } catch (e) {
+                                            console.error("Download fallito, apro in nuova tab", e);
+                                            window.open(imgUrl, '_blank');
+                                        }
+                                    }}
+                                >
+                                    <Download className="h-3.5 w-3.5" /> Scarica
+                                </Button>
                             )}
-                        </CardTitle>
+                        </div>
                     </CardHeader>
                     <CardContent className="pt-4">
                         {allievo.certificati && allievo.certificati[0]?.url_foto ? (
