@@ -43,14 +43,14 @@ export async function POST(req: Request) {
                 <!-- HEADER -->
                 <div style="background-color: #0f172a; padding: 40px 20px; text-align: center; border-radius: 12px 12px 0 0;">
                     <h1 style="color: #ffffff; margin: 0; font-size: 28px; letter-spacing: -0.5px;">Scuola di Danza</h1>
-                    <p style="color: #94a3b8; font-size: 16px; margin-top: 8px;">Conferma Iscrizione & Tessera Digitale</p>
+                    <p style="color: #94a3b8; font-size: 16px; margin-top: 8px;">Codice QR di Riconoscimento</p>
                 </div>
 
                 <!-- BODY -->
                 <div style="padding: 40px 30px; background-color: #ffffff; border-left: 1px solid #e2e8f0; border-right: 1px solid #e2e8f0;">
                     <h2 style="color: #1e293b; font-size: 22px; margin-top: 0;">Benvenuto/a ${nome}!</h2>
                     <p style="color: #475569; font-size: 16px; line-height: 1.6;">
-                        Siamo felicissimi di confermare la tua avvenuta registrazione. Di seguito trovi il riepilogo dei tuoi dati e la tua nuova Tessera Digitale personale.
+                        Siamo felicissimi di confermare la tua avvenuta registrazione dal totem. Di seguito trovi il riepilogo dei tuoi dati e il <b>QR Code provvisorio</b>. Ti servirà esibirlo in reception per poter <b>procedere al pagamento</b> e convalidare l'iscrizione.
                     </p>
 
                     <!-- QR CODE CARD -->
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
                             ${tessera_numero}
                         </div>
                         <p style="color: #64748b; font-size: 14px; margin-top: 8px; margin-bottom: 0;">
-                            Conserva e mostra questo QR Code in reception.
+                            Conserva e mostra questo QR Code in reception per il pagamento.
                         </p>
                     </div>
 

@@ -93,6 +93,10 @@ function ScannerContent() {
     const handleRegistraPagamento = async () => {
         if (!allievo) return
 
+        // Pop-up di conferma pagamento
+        const isConfirmed = window.confirm(`Confermi la ricezione del pagamento per ${allievo.nome} ${allievo.cognome}?`);
+        if (!isConfirmed) return;
+
         try {
             const today = new Date()
             const meseT = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
@@ -106,6 +110,29 @@ function ScannerContent() {
 
             if (error) throw error
             setPagamentoFatto(true)
+            
+            // Invia la Tessera Definitiva via email
+            if (allievo.email) {
+                try {
+                    await fetch('/api/send-tessera-definitiva', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            email: allievo.email,
+                            tessera_numero: allievo.tessera_numero,
+                            nome: `${allievo.nome} ${allievo.cognome}`
+                        })
+                    });
+                    // Feedback per l'amministratore
+                    alert(`Pagamento registrato e Tessera d'accesso inviata via email a ${allievo.email}!`);
+                } catch (emailErr) {
+                    console.error("Errore invio tessera definitiva:", emailErr)
+                    alert("Pagamento registrato correttamente, ma si è verificato un errore nell'invio della mail all'allievo.");
+                }
+            } else {
+                 alert("Pagamento registrato con successo! L'allievo tuttavia non ha una email associata a cui spedire la tessera.");
+            }
+
         } catch (err) {
             console.error("Errore registrazione pagamento:", err)
             alert("Errore durante la registrazione del pagamento.")

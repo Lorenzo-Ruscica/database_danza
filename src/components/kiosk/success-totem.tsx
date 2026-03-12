@@ -1,4 +1,4 @@
-"use client"
+    "use client"
 
 import { QRCodeSVG } from "qrcode.react"
 import { Button } from "@/components/ui/button"
