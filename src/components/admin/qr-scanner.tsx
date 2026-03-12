@@ -43,7 +43,10 @@ export function AdminQrScanner({ open, onOpenChange }: AdminQrScannerProps) {
                 {
                     fps: 10,
                     qrbox: { width: 250, height: 250 },
-                    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA]
+                    supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
+                    videoConstraints: {
+                        facingMode: "environment",
+                    }
                 },
                 false
             )
@@ -147,6 +150,45 @@ export function AdminQrScanner({ open, onOpenChange }: AdminQrScannerProps) {
                         </Button>
                     </div>
                 </div>
+
+                {/* CSS iniettato per forzare lo stile grafico del modulo scanner Html5-Qrcode */}
+                <style dangerouslySetInnerHTML={{__html: `
+                    #reader__dashboard_section_csr span {
+                        display: none !important; /* Nasconde il testo Camera Selection */
+                    }
+                    #html5-qrcode-select-camera {
+                        display: none !important; /* Nasconde a forza la tendina di selezione telecamera */
+                    }
+                    #html5-qrcode-button-camera-permission,
+                    #html5-qrcode-button-camera-start,
+                    #html5-qrcode-button-camera-stop {
+                        background-color: #0f172a !important; /* Colore scuro primario */
+                        color: white !important;
+                        border: none !important;
+                        border-radius: 8px !important;
+                        padding: 12px 24px !important;
+                        font-size: 16px !important;
+                        font-weight: bold !important;
+                        cursor: pointer !important;
+                        width: 100% !important;
+                        max-width: 300px !important;
+                        margin: 10px auto !important;
+                        display: block !important;
+                        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+                        transition: all 0.2s ease-in-out !important;
+                    }
+                    #html5-qrcode-button-camera-permission:active,
+                    #html5-qrcode-button-camera-start:active,
+                    #html5-qrcode-button-camera-stop:active {
+                        transform: scale(0.95) !important;
+                    }
+                    #html5-qrcode-button-camera-stop {
+                        background-color: #ef4444 !important; /* Rosso per lo stop */
+                    }
+                    #html5-qrcode-anchor-scan-type-change {
+                        display: none !important; /* Nasconde link "Scan image file" */
+                    }
+                `}} />
             </DialogContent>
         </Dialog>
     )
