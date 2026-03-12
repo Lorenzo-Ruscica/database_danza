@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
 import { Plus, Search, CheckCircle2, XCircle, AlertTriangle, Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 import { createClient } from "@/lib/supabase/client"
 
@@ -22,6 +23,7 @@ import { Badge } from "@/components/ui/badge"
 import type { Allievo } from "@/types/database"
 
 export default function AllieviPage() {
+    const router = useRouter()
     const [allievi, setAllievi] = useState<Allievo[]>([])
     const [isLoading, setIsLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState("")
@@ -195,8 +197,12 @@ export default function AllieviPage() {
                                             )}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="ghost" size="sm">
-                                                Dettagli
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm"
+                                                onClick={() => router.push(`/admin/scanner?id=${allievo.id}`)}
+                                            >
+                                                Apri Scheda
                                             </Button>
                                         </TableCell>
                                     </TableRow>

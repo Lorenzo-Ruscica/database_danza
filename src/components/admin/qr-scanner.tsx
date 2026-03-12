@@ -21,6 +21,7 @@ interface AdminQrScannerProps {
 export function AdminQrScanner({ open, onOpenChange }: AdminQrScannerProps) {
     const router = useRouter()
     const [error, setError] = useState<string | null>(null)
+    const [manualId, setManualId] = useState("")
 
     const scannerRef = useRef<Html5QrcodeScanner | null>(null)
 
@@ -116,6 +117,35 @@ export function AdminQrScanner({ open, onOpenChange }: AdminQrScannerProps) {
                             </Button>
                         </div>
                     )}
+                </div>
+
+                <div className="flex flex-col gap-2 mt-2 border-t pt-4">
+                    <p className="text-sm font-medium text-center mb-1">Oppure ricerca manuale</p>
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            placeholder="Incolla l'ID o Codice Tessera..." 
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            value={manualId}
+                            onChange={(e) => setManualId(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && manualId.trim()) {
+                                    onOpenChange(false);
+                                    router.push(`/admin/scanner?id=${manualId.trim()}`);
+                                }
+                            }}
+                        />
+                        <Button 
+                            onClick={() => {
+                                if (manualId.trim()) {
+                                    onOpenChange(false);
+                                    router.push(`/admin/scanner?id=${manualId.trim()}`);
+                                }
+                            }}
+                        >
+                            Cerca
+                        </Button>
+                    </div>
                 </div>
             </DialogContent>
         </Dialog>
