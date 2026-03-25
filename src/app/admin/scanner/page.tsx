@@ -20,6 +20,7 @@ function ScannerContent() {
     const [pagamentoFatto, setPagamentoFatto] = useState(false)
     const [firmaError, setFirmaError] = useState(false)
     const [isUploadingCertificato, setIsUploadingCertificato] = useState(false)
+    const [scadenzaInput, setScadenzaInput] = useState("")
 
     useEffect(() => {
         const fetchStudente = async () => {
@@ -145,6 +146,12 @@ function ScannerContent() {
         const file = e.target.files?.[0];
         if (!file || !allievo) return;
         
+        if (!scadenzaInput) {
+            alert("Attenzione: Devi inserire la data di scadenza prima di poter caricare la foto del certificato.");
+            e.target.value = '';
+            return;
+        }
+
         setIsUploadingCertificato(true);
         try {
             const fileName = `${id}-${Date.now()}.jpg`
@@ -153,18 +160,15 @@ function ScannerContent() {
             if (uploadErr) throw uploadErr;
             
             if (uploadData) {
-                const dataScadenza = new Date()
-                dataScadenza.setFullYear(dataScadenza.getFullYear() + 1)
-                
                 const { error: certErr } = await supabase.from('certificati').insert([{
                     allievo_id: id,
                     url_foto: uploadData.path,
-                    data_scadenza: dataScadenza.toISOString().split('T')[0]
+                    data_scadenza: scadenzaInput
                 }])
                 
                 if (certErr) throw certErr;
                 
-                alert("Certificato caricato con successo!");
+                alert("Certificato caricato e registrato con successo!");
                 window.location.reload();
             }
         } catch (err: any) {
@@ -408,18 +412,30 @@ function ScannerContent() {
                                 onClick={() => window.open(supabase.storage.from('certificati').getPublicUrl(allievo.certificati[0].url_foto).data.publicUrl, '_blank')}
                             />
                         ) : (
-                            <div className="flex flex-col items-center justify-center py-6">
+                            <div className="flex flex-col items-center justify-center py-6 w-full max-w-sm mx-auto">
                                 <p className="text-sm text-destructive font-bold text-center mb-4">Manca il Certificato! Impossibile Saldare.</p>
-                                <label className="cursor-pointer bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md hover:bg-primary/90 flex items-center gap-2 transition-colors">
-                                    {isUploadingCertificato ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                                    {isUploadingCertificato ? "Caricamento in corso..." : "Carica o Scatta Foto"}
+                                
+                                <div className="w-full space-y-3 mb-5">
+                                    <label className="text-sm font-semibold text-muted-foreground block text-left">1. Inserisci la Scadenza del Certificato:</label>
+                                    <input 
+                                        type="date"
+                                        value={scadenzaInput}
+                                        onChange={(e) => setScadenzaInput(e.target.value)}
+                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background"
+                                        disabled={isUploadingCertificato}
+                                    />
+                                </div>
+
+                                <label className={`cursor-pointer ${!scadenzaInput ? 'opacity-50 pointer-events-none' : 'hover:bg-primary/90'} bg-primary text-primary-foreground font-semibold px-4 py-3 rounded-md w-full flex justify-center items-center gap-2 transition-colors`}>
+                                    {isUploadingCertificato ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
+                                    {isUploadingCertificato ? "Caricamento in corso..." : "2. Carica o Scatta Foto"}
                                     <input 
                                         type="file" 
                                         accept="image/*" 
                                         capture="environment" 
                                         className="hidden" 
                                         onChange={handleUploadCertificato}
-                                        disabled={isUploadingCertificato}
+                                        disabled={isUploadingCertificato || !scadenzaInput}
                                     />
                                 </label>
                             </div>

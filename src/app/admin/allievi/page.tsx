@@ -101,7 +101,7 @@ export default function AllieviPage() {
     )
 
     const isCertificatoScaduto = (dataScadenza: string | null) => {
-        if (!dataScadenza) return true;
+        if (!dataScadenza) return false;
         return new Date(dataScadenza) < new Date();
     }
 
@@ -175,23 +175,39 @@ export default function AllieviPage() {
                                             )}
                                         </TableCell>
                                         <TableCell className="text-center">
-                                            {isCertificatoScaduto(allievo.scadenza_certificato_medico) ? (
-                                                <div className="flex items-center justify-center text-red-600 gap-1">
+                                            {!allievo.scadenza_certificato_medico ? (
+                                                <div className="flex items-center justify-center text-destructive gap-1">
                                                     <XCircle className="h-4 w-4" />
-                                                    <span className="text-sm font-medium">Scaduto</span>
+                                                    <span className="text-sm font-bold">Mancante</span>
+                                                </div>
+                                            ) : isCertificatoScaduto(allievo.scadenza_certificato_medico) ? (
+                                                <div className="flex flex-col items-center justify-center text-red-600 gap-0.5">
+                                                    <div className="flex items-center gap-1">
+                                                        <XCircle className="h-4 w-4" />
+                                                        <span className="text-sm font-bold">Scaduto</span>
+                                                    </div>
+                                                    <span className="text-[10px] text-muted-foreground font-medium">
+                                                        (Scaduto il {format(new Date(allievo.scadenza_certificato_medico!), "dd/MM/yy")})
+                                                    </span>
                                                 </div>
                                             ) : isCertificatoInScadenza(allievo.scadenza_certificato_medico) ? (
-                                                <div className="flex items-center justify-center text-amber-500 gap-1">
-                                                    <AlertTriangle className="h-4 w-4" />
-                                                    <span className="text-sm font-medium">
-                                                        {format(new Date(allievo.scadenza_certificato_medico!), "dd MMM yyyy", { locale: it })}
+                                                <div className="flex flex-col items-center justify-center text-amber-500 gap-0.5">
+                                                    <div className="flex items-center gap-1">
+                                                        <AlertTriangle className="h-4 w-4" />
+                                                        <span className="text-sm font-bold">Inserito</span>
+                                                    </div>
+                                                    <span className="text-[10px] text-muted-foreground font-medium">
+                                                        (Scade il {format(new Date(allievo.scadenza_certificato_medico!), "dd/MM/yy")})
                                                     </span>
                                                 </div>
                                             ) : (
-                                                <div className="flex items-center justify-center text-green-600 gap-1">
-                                                    <CheckCircle2 className="h-4 w-4" />
-                                                    <span className="text-sm font-medium">
-                                                        {format(new Date(allievo.scadenza_certificato_medico!), "dd MMM yyyy", { locale: it })}
+                                                <div className="flex flex-col items-center justify-center text-green-600 dark:text-green-500 gap-0.5">
+                                                    <div className="flex items-center gap-1">
+                                                        <CheckCircle2 className="h-4 w-4" />
+                                                        <span className="text-sm font-bold">Inserito</span>
+                                                    </div>
+                                                    <span className="text-[10px] text-muted-foreground font-medium">
+                                                        (Scade {format(new Date(allievo.scadenza_certificato_medico!), "dd/MM/yy", { locale: it })})
                                                     </span>
                                                 </div>
                                             )}
