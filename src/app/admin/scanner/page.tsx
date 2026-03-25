@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, AlertCircle, Euro, User, Loader2, Download } from "lucide-react"
+import { CheckCircle2, AlertCircle, Euro, User, Loader2, Download, Upload } from "lucide-react"
 
 // FORZA IL RENDERING DINAMICO: Risolve l'errore "Command npm run build exited with 1" su Vercel
 export const dynamic = 'force-dynamic';
@@ -19,6 +19,7 @@ function ScannerContent() {
     const [isLoading, setIsLoading] = useState(true)
     const [pagamentoFatto, setPagamentoFatto] = useState(false)
     const [firmaError, setFirmaError] = useState(false)
+    const [isUploadingCertificato, setIsUploadingCertificato] = useState(false)
 
     useEffect(() => {
         const fetchStudente = async () => {
@@ -140,6 +141,41 @@ function ScannerContent() {
         }
     }
 
+    const handleUploadCertificato = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !allievo) return;
+        
+        setIsUploadingCertificato(true);
+        try {
+            const fileName = `${id}-${Date.now()}.jpg`
+            const { data: uploadData, error: uploadErr } = await supabase.storage.from('certificati').upload(fileName, file)
+            
+            if (uploadErr) throw uploadErr;
+            
+            if (uploadData) {
+                const dataScadenza = new Date()
+                dataScadenza.setFullYear(dataScadenza.getFullYear() + 1)
+                
+                const { error: certErr } = await supabase.from('certificati').insert([{
+                    allievo_id: id,
+                    url_foto: uploadData.path,
+                    data_scadenza: dataScadenza.toISOString().split('T')[0]
+                }])
+                
+                if (certErr) throw certErr;
+                
+                alert("Certificato caricato con successo!");
+                window.location.reload();
+            }
+        } catch (err: any) {
+            console.error("Errore upload certificato", err);
+            const msg = err?.message || "Errore sconosciuto";
+            alert("Errore durante il caricamento del certificato: " + msg);
+        } finally {
+            setIsUploadingCertificato(false);
+        }
+    }
+
     if (isLoading) {
         return (
             <div className="flex h-[50vh] flex-col items-center justify-center gap-4">
@@ -160,6 +196,7 @@ function ScannerContent() {
     }
 
     const totaleDaPagare = allievo.iscrizioni_corsi?.reduce((acc: number, iscr: any) => acc + (iscr.corsi?.prezzo_standard || 0), 0) || 0
+    const hasCertificato = allievo.certificati && allievo.certificati.length > 0 && allievo.certificati[0]?.url_foto;
 
     return (
         <div className="w-full max-w-xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 px-4 pt-6 pb-24 md:pt-10">
@@ -227,13 +264,17 @@ function ScannerContent() {
                         </div>
 
                         <Button
-                            className="w-full h-16 text-lg md:text-xl font-bold shadow-lg transition-transform active:scale-95"
+                            className={`w-full h-16 text-lg md:text-xl font-bold shadow-lg transition-transform ${(!pagamentoFatto && hasCertificato && totaleDaPagare > 0) ? 'active:scale-95' : ''}`}
                             onClick={handleRegistraPagamento}
-                            disabled={pagamentoFatto || totaleDaPagare === 0}
+                            disabled={pagamentoFatto || totaleDaPagare === 0 || !hasCertificato}
                             variant={pagamentoFatto ? "secondary" : "default"}
                         >
                             <CheckCircle2 className="mr-2 h-6 w-6 md:h-7 md:w-7" />
-                            {pagamentoFatto ? "Pagato per questo mese" : "Conferma Ricezione Soldi"}
+                            {pagamentoFatto 
+                                ? "Pagato per questo mese" 
+                                : !hasCertificato 
+                                    ? "Richiede Certificato Medico" 
+                                    : "Conferma Ricezione Soldi"}
                         </Button>
                     </div>
                 </CardContent>
@@ -367,7 +408,21 @@ function ScannerContent() {
                                 onClick={() => window.open(supabase.storage.from('certificati').getPublicUrl(allievo.certificati[0].url_foto).data.publicUrl, '_blank')}
                             />
                         ) : (
-                            <p className="text-sm text-muted-foreground text-center py-8">Nessun certificato medico caricato.</p>
+                            <div className="flex flex-col items-center justify-center py-6">
+                                <p className="text-sm text-destructive font-bold text-center mb-4">Manca il Certificato! Impossibile Saldare.</p>
+                                <label className="cursor-pointer bg-primary text-primary-foreground font-semibold px-4 py-2 rounded-md hover:bg-primary/90 flex items-center gap-2 transition-colors">
+                                    {isUploadingCertificato ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                                    {isUploadingCertificato ? "Caricamento in corso..." : "Carica o Scatta Foto"}
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        capture="environment" 
+                                        className="hidden" 
+                                        onChange={handleUploadCertificato}
+                                        disabled={isUploadingCertificato}
+                                    />
+                                </label>
+                            </div>
                         )}
                     </CardContent>
                 </Card>
