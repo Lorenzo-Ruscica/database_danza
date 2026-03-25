@@ -38,8 +38,8 @@ export default function LoginPage() {
     }
 
     return (
-        <div className="min-h-screen bg-zinc-50 dark:bg-[#0a0a0a] flex items-center justify-center p-4">
-            <div className="w-full max-w-sm bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-zinc-200 dark:border-zinc-800 p-8 shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+        <div className="min-h-screen bg-background flex items-center justify-center p-4">
+            <div className="w-full max-w-sm bg-card rounded-3xl shadow-2xl border border-border p-8 shadow-[0_20px_50px_rgba(0,0,0,0.1)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
                 <div className="flex flex-col items-center mb-8">
                     <div className="bg-primary/10 p-4 rounded-full mb-5 shadow-inner">
                         <Lock className="h-8 w-8 text-primary" />
@@ -57,7 +57,7 @@ export default function LoginPage() {
                             value={username}
                             onChange={(e) => setUsername(e.target.value)}
                             placeholder="Nome utente (es. admin)"
-                            className="w-full px-5 py-4 rounded-xl border focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition-all dark:bg-zinc-950 dark:border-zinc-800 font-medium"
+                            className="w-full px-5 py-4 rounded-xl border border-input focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition-all bg-background font-medium"
                             autoFocus
                         />
                         <input
@@ -65,7 +65,7 @@ export default function LoginPage() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             placeholder="Inserisci password..."
-                            className="w-full px-5 py-4 rounded-xl border focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition-all dark:bg-zinc-950 dark:border-zinc-800 font-medium"
+                            className="w-full px-5 py-4 rounded-xl border border-input focus:ring-4 focus:ring-primary/20 focus:border-primary outline-none transition-all bg-background font-medium"
                         />
                     </div>
                     {error && (

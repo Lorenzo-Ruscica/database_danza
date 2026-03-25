@@ -107,7 +107,7 @@ export function AdminQrScanner({ open, onOpenChange }: AdminQrScannerProps) {
                     </DialogDescription>
                 </DialogHeader>
 
-                <div className="flex flex-col items-center justify-center min-h-[300px] border rounded-lg bg-zinc-50 overflow-hidden relative">
+                <div className="flex flex-col items-center justify-center min-h-[300px] border rounded-lg bg-muted/50 overflow-hidden relative">
 
                     <div id="reader" className="w-full" />
 
@@ -162,8 +162,8 @@ export function AdminQrScanner({ open, onOpenChange }: AdminQrScannerProps) {
                     #html5-qrcode-button-camera-permission,
                     #html5-qrcode-button-camera-start,
                     #html5-qrcode-button-camera-stop {
-                        background-color: #0f172a !important; /* Colore scuro primario */
-                        color: white !important;
+                        background-color: var(--primary) !important; /* Colore scuro primario adattato al tema */
+                        color: var(--primary-foreground) !important;
                         border: none !important;
                         border-radius: 8px !important;
                         padding: 12px 24px !important;
@@ -183,7 +183,7 @@ export function AdminQrScanner({ open, onOpenChange }: AdminQrScannerProps) {
                         transform: scale(0.95) !important;
                     }
                     #html5-qrcode-button-camera-stop {
-                        background-color: #ef4444 !important; /* Rosso per lo stop */
+                        background-color: var(--destructive) !important; /* Colore distruttivo del tema */
                     }
                     #html5-qrcode-anchor-scan-type-change {
                         display: none !important; /* Nasconde link "Scan image file" */

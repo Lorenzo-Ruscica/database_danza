@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import Image from "next/image"
 import { Users, BookOpen, Receipt, Settings, CheckSquare, QrCode } from "lucide-react"
 
 import { cn } from "@/lib/utils"
@@ -41,7 +42,7 @@ export function Sidebar() {
         <div className="flex flex-col h-full border-r bg-muted/40 pb-4">
             <div className="flex h-14 items-center justify-between border-b px-4 lg:h-[60px] lg:px-6">
                 <Link href="/admin" className="flex items-center gap-2 font-semibold">
-                    <span className="text-xl text-primary font-bold tracking-tight">SD Admin</span>
+                    <Image src="/logo.png" alt="BigDance Logo" width={120} height={40} className="object-contain dark:brightness-200" priority />
                 </Link>
 
                 <Button

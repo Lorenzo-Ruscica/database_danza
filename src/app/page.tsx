@@ -13,6 +13,7 @@ import { InactivityTimer } from "@/components/kiosk/inactivity-timer"
 import { VirtualKeyboard } from "@/components/kiosk/virtual-keyboard"
 import { Moon, Sun, Lock } from "lucide-react"
 import Link from "next/link"
+import Image from "next/image"
 
 export default function KioskPage() {
   const { step, anagrafica, resetForm } = useKioskStore()
@@ -71,15 +72,15 @@ export default function KioskPage() {
   }
 
   return (
-    <div className={`min-h-screen flex flex-col font-sans selection:bg-black/10 selection:dark:bg-white/20 relative overflow-hidden transition-colors duration-500 ${isDark ? "dark bg-[#0a0a0a] text-white" : "bg-white text-black"}`}>
+    <div className={`min-h-screen flex flex-col font-sans selection:bg-primary/20 relative overflow-hidden transition-colors duration-500 bg-background text-foreground ${isDark ? "dark" : ""}`}>
 
       {/* Elegant Dynamic Minimalist Background */}
-      <div className={`absolute inset-0 transition-opacity duration-1000 -z-10 animate-gradient-slow ${isDark ? 'bg-gradient-to-br from-[#050505] via-[#0f0f0f] to-[#000000]' : 'bg-gradient-to-br from-zinc-50 via-gray-100 to-zinc-200'}`} />
+      <div className={`absolute inset-0 transition-opacity duration-1000 -z-10 animate-gradient-slow ${isDark ? 'bg-gradient-to-br from-slate-950 via-blue-950/60 to-slate-950' : 'bg-gradient-to-br from-blue-50/80 via-indigo-50/50 to-sky-100/60'}`} />
 
       {/* Floating Soft Ambient Lights */}
-      <div className={`absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] blur-[120px] rounded-[100%] pointer-events-none animate-float-1 mix-blend-screen opacity-60 ${isDark ? "bg-white/[0.03]" : "bg-black/[0.04]"}`} />
-      <div className={`absolute bottom-[-10%] right-[-10%] w-[55vw] h-[55vw] blur-[140px] rounded-[100%] pointer-events-none animate-float-2 mix-blend-screen opacity-60 ${isDark ? "bg-white/[0.02]" : "bg-black/[0.03]"}`} />
-      <div className={`absolute top-[30%] left-[60%] w-[35vw] h-[35vw] blur-[100px] rounded-full pointer-events-none animate-float-1 opacity-50 ${isDark ? "bg-zinc-800/[0.2]" : "bg-zinc-400/[0.15]"}`} style={{ animationDelay: '-8s', animationDuration: '25s' }} />
+      <div className={`absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] blur-[120px] rounded-[100%] pointer-events-none animate-float-1 mix-blend-screen opacity-60 ${isDark ? "bg-blue-500/[0.06]" : "bg-blue-600/[0.05]"}`} />
+      <div className={`absolute bottom-[-10%] right-[-10%] w-[55vw] h-[55vw] blur-[140px] rounded-[100%] pointer-events-none animate-float-2 mix-blend-screen opacity-60 ${isDark ? "bg-indigo-500/[0.05]" : "bg-sky-500/[0.06]"}`} />
+      <div className={`absolute top-[30%] left-[60%] w-[35vw] h-[35vw] blur-[100px] rounded-full pointer-events-none animate-float-1 opacity-50 ${isDark ? "bg-blue-800/[0.2]" : "bg-indigo-300/[0.2]"}`} style={{ animationDelay: '-8s', animationDuration: '25s' }} />
 
       {/* Global Kiosk Interactions */}
       <InactivityTimer onTimeout={handleReset} />
@@ -107,14 +108,14 @@ export default function KioskPage() {
         </button>
 
         <div className="relative inline-block mb-3 text-center group">
-          {/* Typographic Dance Elegance */}
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-playfair font-black tracking-normal uppercase relative z-10 transition-transform duration-700 ease-out group-hover:scale-105">
-            Accademia
-          </h1>
-          <h2 className={`text-3xl md:text-4xl font-playfair font-light italic -mt-2 tracking-[0.2em] relative z-10 ${isDark ? 'text-white/70' : 'text-black/70'}`}>
-            di Danza
-          </h2>
-          <div className={`absolute -bottom-8 left-1/2 -translate-x-1/2 w-48 h-[1px] bg-gradient-to-r from-transparent to-transparent ${isDark ? 'via-white/40' : 'via-black/40'}`} />
+          <Image 
+            src="/logo.png" 
+            alt="BigDance Logo" 
+            width={320} 
+            height={140} 
+            priority
+            className="object-contain relative z-10 transition-transform duration-700 ease-out group-hover:scale-105"
+          />
         </div>
         <div className="flex justify-center mt-6">
           <div className="flex items-center gap-3">
