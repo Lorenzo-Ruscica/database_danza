@@ -38,6 +38,13 @@ export default function CorsiPage() {
     const [newCorso, setNewCorso] = useState({ nome: '', descrizione: '', prezzo_standard: 0 })
     const [isSaving, setIsSaving] = useState(false)
 
+    // Edit & Enrolled State
+    const [corsoToEdit, setCorsoToEdit] = useState<any | null>(null)
+    const [isEditOpen, setIsEditOpen] = useState(false)
+    const [corsoToViewAglievi, setCorsoToViewAglievi] = useState<any | null>(null)
+    const [iscrittiList, setIscrittiList] = useState<any[]>([])
+    const [isLoadingIscritti, setIsLoadingIscritti] = useState(false)
+
     const supabase = createClient()
 
     useEffect(() => {
@@ -105,8 +112,66 @@ export default function CorsiPage() {
         } catch (err) {
             console.error("Errore salvataggio corso:", err)
             alert("Errore durante il salvataggio del corso: " + (err instanceof Error ? err.message : JSON.stringify(err)))
+                setIsSaving(false)
+        }
+    }
+
+    const handleEditCorso = async () => {
+        if (!corsoToEdit || !corsoToEdit.nome || corsoToEdit.prezzo_mensile < 0) return;
+
+        setIsSaving(true);
+        try {
+            const { error } = await supabase.from('corsi').update({
+                nome: corsoToEdit.nome,
+                descrizione: corsoToEdit.descrizione,
+                prezzo_standard: corsoToEdit.prezzo_mensile
+            }).eq('id', corsoToEdit.id);
+            
+            if (error) throw error;
+            
+            setCorsi(corsi.map(c => c.id === corsoToEdit.id ? { ...c, ...corsoToEdit } : c).sort((a, b) => a.nome.localeCompare(b.nome)))
+            setIsEditOpen(false);
+            setCorsoToEdit(null);
+        } catch (err: any) {
+            alert("Errore modifica: " + err.message);
         } finally {
-            setIsSaving(false)
+            setIsSaving(false);
+        }
+    }
+
+    const handleDeleteCorso = async (id: string, name: string) => {
+        if (!window.confirm(`Sei sicuro di voler eliminare il corso "${name}"?\nATTENZIONE: Se ci sono allievi iscritti, l'operazione fallirà per motivi di sicurezza.`)) return;
+        try {
+            const { error } = await supabase.from('corsi').delete().eq('id', id);
+            if (error) throw error;
+            setCorsi(corsi.filter(c => c.id !== id));
+            setIsEditOpen(false);
+        } catch (err: any) {
+            console.error("Errore cancellazione", err);
+            alert("Impossibile eliminare il corso. Probabilmente ci sono allievi attualmente iscritti. Rimuovili prima di tentare l'eliminazione.");
+        }
+    }
+
+    const handleViewIscritti = async (corso: any) => {
+        setCorsoToViewAglievi(corso);
+        setIsLoadingIscritti(true);
+        try {
+            const { data, error } = await supabase
+                .from('iscrizioni_corsi')
+                .select(`
+                    allievi ( id, nome, cognome )
+                `)
+                .eq('corso_id', corso.id);
+                
+            if (error) throw error;
+            // Estrai i dati degli allievi dall'interno dell'oggetto relazionale
+            const list = data ? data.map((d: any) => d.allievi).filter(Boolean) : [];
+            // Ordiniamo per cognome e poi nome
+            setIscrittiList(list.sort((a, b) => a.cognome.localeCompare(b.cognome) || a.nome.localeCompare(b.nome)));
+        } catch (err: any) {
+            alert("Errore caricamento iscritti: " + err.message);
+        } finally {
+            setIsLoadingIscritti(false);
         }
     }
 
@@ -147,16 +212,18 @@ export default function CorsiPage() {
                             </div>
                             <div className="grid grid-cols-4 items-center gap-4">
                                 <Label htmlFor="prezzo" className="text-right">
-                                    PrezzoMensile
+                                    Prezzo Mensile
                                 </Label>
-                                <Input
-                                    id="prezzo"
-                                    type="number"
-                                    placeholder="50.00"
-                                    className="col-span-3"
-                                    value={newCorso.prezzo_standard || ''}
-                                    onChange={(e) => setNewCorso({ ...newCorso, prezzo_standard: parseFloat(e.target.value) || 0 })}
-                                />
+                                <div className="col-span-3">
+                                    <Input
+                                        id="prezzo"
+                                        type="number"
+                                        placeholder="0 per In Segreteria"
+                                        value={newCorso.prezzo_standard || ''}
+                                        onChange={(e) => setNewCorso({ ...newCorso, prezzo_standard: parseFloat(e.target.value) || 0 })}
+                                    />
+                                    <p className="text-[10px] text-muted-foreground mt-1 text-right">L'importo 0 figurerà come "In Segreteria"</p>
+                                </div>
                             </div>
                             <div className="grid grid-cols-4 items-start gap-4">
                                 <Label htmlFor="descrizione" className="text-right mt-2">
@@ -264,13 +331,28 @@ export default function CorsiPage() {
                                             </div>
                                         </TableCell>
                                         <TableCell className="text-right font-medium">
-                                            € {corso.prezzo_mensile.toFixed(2)}
+                                            {corso.prezzo_mensile === 0 ? (
+                                                <span className="text-muted-foreground text-sm italic">In Segreteria</span>
+                                            ) : (
+                                                `€ ${corso.prezzo_mensile.toFixed(2)}`
+                                            )}
                                         </TableCell>
                                         <TableCell className="text-right space-x-2">
-                                            <Button variant="outline" size="sm">
+                                            <Button 
+                                                variant="outline" 
+                                                size="sm"
+                                                onClick={() => handleViewIscritti(corso)}
+                                            >
                                                 Iscritti
                                             </Button>
-                                            <Button variant="ghost" size="sm">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="sm"
+                                                onClick={() => {
+                                                    setCorsoToEdit({ ...corso })
+                                                    setIsEditOpen(true)
+                                                }}
+                                            >
                                                 Modifica
                                             </Button>
                                         </TableCell>
@@ -298,6 +380,95 @@ export default function CorsiPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* View Iscritti Dialog */}
+            <Dialog open={!!corsoToViewAglievi} onOpenChange={(open) => !open && setCorsoToViewAglievi(null)}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Iscritti al corso: {corsoToViewAglievi?.nome}</DialogTitle>
+                        <DialogDescription>Elenco degli allievi attualmente attivi e registrati a questo corso.</DialogDescription>
+                    </DialogHeader>
+                    <div className="py-2 max-h-[60vh] overflow-y-auto">
+                        {isLoadingIscritti ? (
+                            <div className="flex justify-center py-8"><Loader2 className="animate-spin h-8 w-8 text-muted-foreground" /></div>
+                        ) : iscrittiList.length > 0 ? (
+                            <ul className="space-y-2">
+                                {iscrittiList.map((al: any) => (
+                                    <li key={al.id} className="p-3 bg-muted rounded-md border flex items-center justify-between shadow-sm">
+                                        <span className="font-semibold text-foreground">{al.cognome} {al.nome}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        ) : (
+                            <p className="text-center text-muted-foreground py-8">Nessun iscritto attualmente a questo corso.</p>
+                        )}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Corso Dialog */}
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Modifica Corso</DialogTitle>
+                        <DialogDescription>
+                            Aggiorna i dettagli del corso o eliminalo definitivamente.
+                        </DialogDescription>
+                    </DialogHeader>
+                    {corsoToEdit && (
+                        <div className="grid gap-4 py-4">
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="edit-nome" className="text-right">Nome *</Label>
+                                <Input
+                                    id="edit-nome"
+                                    className="col-span-3"
+                                    value={corsoToEdit.nome}
+                                    onChange={(e) => setCorsoToEdit({ ...corsoToEdit, nome: e.target.value })}
+                                />
+                            </div>
+                            <div className="grid grid-cols-4 items-center gap-4">
+                                <Label htmlFor="edit-prezzo" className="text-right">Prezzo Mensile</Label>
+                                <div className="col-span-3">
+                                    <Input
+                                        id="edit-prezzo"
+                                        type="number"
+                                        placeholder="0 per In Segreteria"
+                                        value={corsoToEdit.prezzo_mensile}
+                                        onChange={(e) => setCorsoToEdit({ ...corsoToEdit, prezzo_mensile: parseFloat(e.target.value) || 0 })}
+                                    />
+                                    <p className="text-[10px] text-muted-foreground mt-1 right-0">L'importo 0 figurerà come "In Segreteria"</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-4 items-start gap-4">
+                                <Label htmlFor="edit-descrizione" className="text-right mt-2">Descrizione</Label>
+                                <Textarea
+                                    id="edit-descrizione"
+                                    className="col-span-3"
+                                    value={corsoToEdit.descrizione || ''}
+                                    onChange={(e) => setCorsoToEdit({ ...corsoToEdit, descrizione: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                    )}
+                    <DialogFooter className="flex flex-col-reverse sm:flex-row justify-between w-full max-sm:gap-2">
+                        <Button 
+                            variant="destructive" 
+                            type="button" 
+                            onClick={() => handleDeleteCorso(corsoToEdit?.id, corsoToEdit?.nome)}
+                            className="sm:mr-auto"
+                        >
+                            Elimina
+                        </Button>
+                        <div className="flex gap-2 justify-end w-full">
+                            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Annulla</Button>
+                            <Button type="submit" onClick={handleEditCorso} disabled={isSaving || !corsoToEdit?.nome}>
+                                {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salva Modifiche"}
+                            </Button>
+                        </div>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
         </div>
     )
 }

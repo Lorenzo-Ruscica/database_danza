@@ -23,6 +23,7 @@ export default function Step4Corsi() {
     }, [supabase])
 
     const isFormValid = corsi.length > 0
+    const haCorsiInSegreteria = corsiDisponibili.some(c => corsi.includes(c.id) && c.prezzo_standard === 0)
 
     return (
         <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -54,10 +55,16 @@ export default function Step4Corsi() {
                                     <h3 className={`font-semibold text-xl ${isSelected ? 'text-primary' : ''}`}>
                                         {corso.nome}
                                     </h3>
-                                    <div className="flex items-center text-muted-foreground font-medium text-lg">
-                                        <Euro className="h-4 w-4 mr-1" />
-                                        {corso.prezzo_standard.toFixed(2)}/mese
-                                    </div>
+                                    {corso.prezzo_standard === 0 ? (
+                                        <div className="flex items-center text-muted-foreground font-medium text-[15px] italic">
+                                            Info Prezzo in Segreteria
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center text-muted-foreground font-medium text-lg">
+                                            <Euro className="h-4 w-4 mr-1" />
+                                            {corso.prezzo_standard.toFixed(2)}/mese
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div className={`h-10 w-10 rounded-full border-2 flex items-center justify-center shrink-0 ml-4 ${isSelected ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/30'
@@ -76,8 +83,19 @@ export default function Step4Corsi() {
                     <h4 className="font-semibold text-xl text-primary">Riepilogo Costi Mensili</h4>
                     <p className="text-muted-foreground">{corsi.length} corsi selezionati</p>
                 </div>
-                <div className="text-4xl font-bold text-primary flex items-end">
-                    € {totalePrezzo.toFixed(2)}
+                <div className="text-4xl font-bold text-primary flex flex-col items-end">
+                    <div>
+                        {totalePrezzo === 0 && haCorsiInSegreteria ? (
+                            <span className="text-2xl font-semibold italic">In Segreteria</span>
+                        ) : (
+                            <span>€ {totalePrezzo.toFixed(2)}</span>
+                        )}
+                    </div>
+                    {haCorsiInSegreteria && totalePrezzo > 0 && (
+                        <span className="text-sm text-muted-foreground font-normal italic mt-1 whitespace-nowrap">
+                            + Info altri corsi in segreteria
+                        </span>
+                    )}
                 </div>
             </div>
 

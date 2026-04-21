@@ -112,7 +112,7 @@ function ScannerContent() {
 
             if (error) throw error
             setPagamentoFatto(true)
-            
+
             // Invia la Tessera Definitiva via email
             if (allievo.email) {
                 try {
@@ -132,7 +132,7 @@ function ScannerContent() {
                     alert("Pagamento registrato correttamente, ma si è verificato un errore nell'invio della mail all'allievo.");
                 }
             } else {
-                 alert("Pagamento registrato con successo! L'allievo tuttavia non ha una email associata a cui spedire la tessera.");
+                alert("Pagamento registrato con successo! L'allievo tuttavia non ha una email associata a cui spedire la tessera.");
             }
 
         } catch (err: any) {
@@ -145,7 +145,7 @@ function ScannerContent() {
     const handleUploadCertificato = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file || !allievo) return;
-        
+
         if (!scadenzaInput) {
             alert("Attenzione: Devi inserire la data di scadenza prima di poter caricare la foto del certificato.");
             e.target.value = '';
@@ -156,18 +156,18 @@ function ScannerContent() {
         try {
             const fileName = `${id}-${Date.now()}.jpg`
             const { data: uploadData, error: uploadErr } = await supabase.storage.from('certificati').upload(fileName, file)
-            
+
             if (uploadErr) throw uploadErr;
-            
+
             if (uploadData) {
                 const { error: certErr } = await supabase.from('certificati').insert([{
                     allievo_id: id,
                     url_foto: uploadData.path,
                     data_scadenza: scadenzaInput
                 }])
-                
+
                 if (certErr) throw certErr;
-                
+
                 alert("Certificato caricato e registrato con successo!");
                 window.location.reload();
             }
@@ -201,6 +201,8 @@ function ScannerContent() {
 
     const totaleDaPagare = allievo.iscrizioni_corsi?.reduce((acc: number, iscr: any) => acc + (iscr.corsi?.prezzo_standard || 0), 0) || 0
     const hasCertificato = allievo.certificati && allievo.certificati.length > 0 && allievo.certificati[0]?.url_foto;
+    const hasCorsiInSegreteria = allievo.iscrizioni_corsi?.some((iscr: any) => iscr.corsi?.prezzo_standard === 0);
+    const noCorsiAtAll = !allievo.iscrizioni_corsi || allievo.iscrizioni_corsi.length === 0;
 
     return (
         <div className="w-full max-w-xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 px-4 pt-6 pb-24 md:pt-10">
@@ -249,7 +251,9 @@ function ScannerContent() {
                             {allievo.iscrizioni_corsi?.map((iscr: any, i: number) => (
                                 <li key={i} className="flex justify-between items-center bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-lg shadow-sm">
                                     <span className="font-medium text-sm md:text-base">{iscr.corsi.nome}</span>
-                                    <span className="text-muted-foreground font-semibold">€ {iscr.corsi.prezzo_standard.toFixed(2)}</span>
+                                    <span className="text-muted-foreground font-semibold">
+                                        {iscr.corsi.prezzo_standard === 0 ? "In Segreteria" : `€ ${iscr.corsi.prezzo_standard.toFixed(2)}`}
+                                    </span>
                                 </li>
                             ))}
                             {(!allievo.iscrizioni_corsi || allievo.iscrizioni_corsi.length === 0) && (
@@ -261,23 +265,34 @@ function ScannerContent() {
                     <div className="bg-primary/5 rounded-2xl p-5 md:p-6 border-2 border-primary/20 shadow-inner">
                         <div className="flex justify-between items-end mb-6">
                             <span className="text-muted-foreground font-semibold text-sm md:text-base uppercase tracking-wider">Totale Mensile</span>
-                            <span className="text-4xl md:text-5xl font-black text-primary flex items-center leading-none tracking-tighter">
-                                <Euro className="h-7 w-7 md:h-10 md:w-10 mr-1 opacity-80" />
-                                {totaleDaPagare.toFixed(2)}
-                            </span>
+                            <div className="text-4xl md:text-5xl font-black text-primary flex flex-col items-end leading-none tracking-tighter">
+                                {totaleDaPagare === 0 && hasCorsiInSegreteria ? (
+                                    <span className="text-2xl font-semibold italic">In Segreteria</span>
+                                ) : (
+                                    <span className="flex items-center">
+                                        <Euro className="h-7 w-7 md:h-10 md:w-10 mr-1 opacity-80" />
+                                        {totaleDaPagare.toFixed(2)}
+                                    </span>
+                                )}
+                                {hasCorsiInSegreteria && totaleDaPagare > 0 && (
+                                    <span className="text-sm text-muted-foreground font-normal italic mt-2 whitespace-nowrap">
+                                        + Corsi in segreteria
+                                    </span>
+                                )}
+                            </div>
                         </div>
 
                         <Button
-                            className={`w-full h-16 text-lg md:text-xl font-bold shadow-lg transition-transform ${(!pagamentoFatto && hasCertificato && totaleDaPagare > 0) ? 'active:scale-95' : ''}`}
+                            className={`w-full h-16 text-lg md:text-xl font-bold shadow-lg transition-transform ${(!pagamentoFatto && hasCertificato && !noCorsiAtAll) ? 'active:scale-95' : ''}`}
                             onClick={handleRegistraPagamento}
-                            disabled={pagamentoFatto || totaleDaPagare === 0 || !hasCertificato}
+                            disabled={pagamentoFatto || noCorsiAtAll || !hasCertificato}
                             variant={pagamentoFatto ? "secondary" : "default"}
                         >
                             <CheckCircle2 className="mr-2 h-6 w-6 md:h-7 md:w-7" />
-                            {pagamentoFatto 
-                                ? "Pagato per questo mese" 
-                                : !hasCertificato 
-                                    ? "Richiede Certificato Medico" 
+                            {pagamentoFatto
+                                ? "Pagato per questo mese"
+                                : !hasCertificato
+                                    ? "Richiede Certificato Medico"
                                     : "Conferma Ricezione Soldi"}
                         </Button>
                     </div>
@@ -350,9 +365,9 @@ function ScannerContent() {
                     <CardContent className="pt-4 flex justify-center">
                         {!firmaError ? (
                             /* eslint-disable-next-line @next/next/no-img-element */
-                            <img 
-                                src={supabase.storage.from('firme').getPublicUrl(`firma-${id}.png`).data.publicUrl} 
-                                alt="Firma Studente" 
+                            <img
+                                src={supabase.storage.from('firme').getPublicUrl(`firma-${id}.png`).data.publicUrl}
+                                alt="Firma Studente"
                                 className="w-full max-w-sm h-40 object-contain bg-zinc-50 border rounded-lg"
                                 onError={() => setFirmaError(true)}
                             />
@@ -405,19 +420,19 @@ function ScannerContent() {
                     <CardContent className="pt-4">
                         {allievo.certificati && allievo.certificati[0]?.url_foto ? (
                             /* eslint-disable-next-line @next/next/no-img-element */
-                            <img 
-                                src={supabase.storage.from('certificati').getPublicUrl(allievo.certificati[0].url_foto).data.publicUrl} 
-                                alt="Certificato Medico" 
+                            <img
+                                src={supabase.storage.from('certificati').getPublicUrl(allievo.certificati[0].url_foto).data.publicUrl}
+                                alt="Certificato Medico"
                                 className="w-full h-40 object-cover cursor-pointer hover:opacity-90 transition-opacity border rounded-lg"
                                 onClick={() => window.open(supabase.storage.from('certificati').getPublicUrl(allievo.certificati[0].url_foto).data.publicUrl, '_blank')}
                             />
                         ) : (
                             <div className="flex flex-col items-center justify-center py-6 w-full max-w-sm mx-auto">
                                 <p className="text-sm text-destructive font-bold text-center mb-4">Manca il Certificato! Impossibile Saldare.</p>
-                                
+
                                 <div className="w-full space-y-3 mb-5">
                                     <label className="text-sm font-semibold text-muted-foreground block text-left">1. Inserisci la Scadenza del Certificato:</label>
-                                    <input 
+                                    <input
                                         type="date"
                                         value={scadenzaInput}
                                         onChange={(e) => setScadenzaInput(e.target.value)}
@@ -429,11 +444,11 @@ function ScannerContent() {
                                 <label className={`cursor-pointer ${!scadenzaInput ? 'opacity-50 pointer-events-none' : 'hover:bg-primary/90'} bg-primary text-primary-foreground font-semibold px-4 py-3 rounded-md w-full flex justify-center items-center gap-2 transition-colors`}>
                                     {isUploadingCertificato ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
                                     {isUploadingCertificato ? "Caricamento in corso..." : "2. Carica o Scatta Foto"}
-                                    <input 
-                                        type="file" 
-                                        accept="image/*" 
-                                        capture="environment" 
-                                        className="hidden" 
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        capture="environment"
+                                        className="hidden"
                                         onChange={handleUploadCertificato}
                                         disabled={isUploadingCertificato || !scadenzaInput}
                                     />
