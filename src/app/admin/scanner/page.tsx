@@ -4,8 +4,9 @@ import { useEffect, useState, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { CheckCircle2, AlertCircle, Euro, User, Loader2, Download, Upload } from "lucide-react"
+import { CheckCircle2, AlertCircle, Euro, User, Loader2, Download, Upload, Edit } from "lucide-react"
 
 // FORZA IL RENDERING DINAMICO: Risolve l'errore "Command npm run build exited with 1" su Vercel
 export const dynamic = 'force-dynamic';
@@ -21,6 +22,15 @@ function ScannerContent() {
     const [firmaError, setFirmaError] = useState(false)
     const [isUploadingCertificato, setIsUploadingCertificato] = useState(false)
     const [scadenzaInput, setScadenzaInput] = useState("")
+
+    const [isEditCorsiOpen, setIsEditCorsiOpen] = useState(false)
+    const [allCorsi, setAllCorsi] = useState<any[]>([])
+    const [selectedCorsiIds, setSelectedCorsiIds] = useState<string[]>([])
+    const [isSavingCorsi, setIsSavingCorsi] = useState(false)
+
+    // Fast Mode States
+    const [showFullCard, setShowFullCard] = useState(false)
+    const [presenzaRegistrata, setPresenzaRegistrata] = useState(false)
 
     useEffect(() => {
         const fetchStudente = async () => {
@@ -51,7 +61,9 @@ function ScannerContent() {
                         tutore_cognome,
                         tutore_codice_fiscale,
                         iscrizioni_corsi (
+                            corso_id,
                             corsi (
+                                id,
                                 nome,
                                 prezzo_standard
                             )
@@ -82,7 +94,39 @@ function ScannerContent() {
                     if (checkPagamento && checkPagamento.length > 0) {
                         setPagamentoFatto(true)
                     }
+
+                    // AUTO-REGISTRA PRESENZE
+                    const todayDateString = today.toISOString().split('T')[0];
+                    if (data.iscrizioni_corsi && data.iscrizioni_corsi.length > 0) {
+                        // verify if already present
+                        const { data: presenzeGiaEsistenti } = await supabase
+                            .from('presenze')
+                            .select('corso_id')
+                            .eq('allievo_id', id)
+                            .eq('data_presenza', todayDateString);
+                            
+                        const corsiIdsToInsert = data.iscrizioni_corsi
+                            .map((iscr: any) => iscr.corso_id)
+                            .filter((cId: string) => !presenzeGiaEsistenti?.find((p: any) => p.corso_id === cId));
+
+                        if (corsiIdsToInsert.length > 0) {
+                            const inserts = corsiIdsToInsert.map((cId: string) => ({
+                                allievo_id: id,
+                                corso_id: cId,
+                                data_presenza: todayDateString
+                            }));
+                            await supabase.from('presenze').insert(inserts);
+                            setPresenzaRegistrata(true);
+                        } else {
+                            // Erano già state registrate oggi
+                            setPresenzaRegistrata(true);
+                        }
+                    }
                 }
+                
+                const { data: corsiData } = await supabase.from('corsi').select('id, nome, prezzo_standard').order('nome')
+                if (corsiData) setAllCorsi(corsiData)
+                
             } catch (err) {
                 console.error("Errore fetch scanner:", err)
             } finally {
@@ -91,6 +135,37 @@ function ScannerContent() {
         }
         fetchStudente()
     }, [id, supabase])
+
+    const openEditCorsi = () => {
+        const currentIds = allievo.iscrizioni_corsi?.map((iscr: any) => iscr.corso_id).filter(Boolean) || [];
+        setSelectedCorsiIds(currentIds);
+        setIsEditCorsiOpen(true);
+    };
+
+    const handleSaveCorsi = async () => {
+        setIsSavingCorsi(true);
+        try {
+            // Elimina tutte le iscrizioni correnti per questo allievo
+            await supabase.from('iscrizioni_corsi').delete().eq('allievo_id', id);
+            
+            // Inserisci le nuove iscrizioni
+            if (selectedCorsiIds.length > 0) {
+                const inserts = selectedCorsiIds.map(corsoId => ({
+                    allievo_id: id,
+                    corso_id: corsoId
+                }));
+                const { error } = await supabase.from('iscrizioni_corsi').insert(inserts);
+                if (error) throw error;
+            }
+            
+            alert("Corsi studente aggiornati con successo!");
+            window.location.reload();
+        } catch (err: any) {
+            alert("Errore salva corsi: " + err.message);
+        } finally {
+            setIsSavingCorsi(false);
+        }
+    };
 
     const handleRegistraPagamento = async () => {
         if (!allievo) return
@@ -204,6 +279,68 @@ function ScannerContent() {
     const hasCorsiInSegreteria = allievo.iscrizioni_corsi?.some((iscr: any) => iscr.corsi?.prezzo_standard === 0);
     const noCorsiAtAll = !allievo.iscrizioni_corsi || allievo.iscrizioni_corsi.length === 0;
 
+    if (!showFullCard) {
+        return (
+            <div className="flex min-h-[90vh] flex-col items-center justify-center gap-6 p-6 animate-in fade-in zoom-in duration-500 overflow-hidden">
+                {presenzaRegistrata ? (
+                    <div className="bg-green-100 p-6 rounded-full shadow-inner border border-green-200">
+                        <CheckCircle2 className="h-24 w-24 text-green-600" />
+                    </div>
+                ) : (
+                    <div className="bg-primary/10 p-6 rounded-full shadow-inner border border-primary/20">
+                        <User className="h-24 w-24 text-primary" />
+                    </div>
+                )}
+                
+                <div className="text-center space-y-2 mt-2">
+                    <h1 className="text-4xl md:text-6xl font-black text-foreground break-words">{allievo.nome} <br/> {allievo.cognome}</h1>
+                    <p className="text-xl md:text-2xl text-muted-foreground font-medium mt-2">Tessera: <strong className="text-foreground">{allievo.tessera_numero}</strong></p>
+                </div>
+
+                {presenzaRegistrata && (
+                    <p className="text-xl md:text-2xl font-bold text-green-700 my-4 bg-green-50 px-8 py-3 rounded-full shadow-sm border border-green-300 flex items-center gap-3">
+                        <CheckCircle2 className="h-6 w-6"/> Presenza Registrata Oggi
+                    </p>
+                )}
+
+                <div className="w-full max-w-md bg-muted/40 p-6 rounded-3xl border shadow-sm mt-4">
+                    <h3 className="font-bold text-lg mb-4 text-center text-muted-foreground uppercase opacity-80 border-b pb-3">Corsi Sottoscritti</h3>
+                    {!noCorsiAtAll ? (
+                        <ul className="space-y-4">
+                            {allievo.iscrizioni_corsi.map((iscr: any, i: number) => (
+                                <li key={i} className="font-bold text-xl md:text-2xl flex items-center gap-4">
+                                    <div className="h-3 w-3 rounded-full bg-primary shrink-0" />
+                                    {iscr.corsi?.nome}
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-center italic opacity-70">Nessun corso assegnato</p>
+                    )}
+                </div>
+
+                <div className="mt-8 flex flex-col items-center gap-4 w-full max-w-md pb-12">
+                    {/* Avvisi rapidi in rosso o giallo */}
+                    {!pagamentoFatto && (
+                        <div className="text-destructive text-sm md:text-base font-bold flex items-center gap-2 bg-destructive/10 px-5 py-2.5 rounded-full border border-destructive/20 w-full justify-center text-center">
+                            <AlertCircle className="w-5 h-5 shrink-0" /> Pagamento Mese Attuale da Confermare in Segreteria
+                        </div>
+                    )}
+                    {!hasCertificato && (
+                        <div className="text-amber-700 text-sm md:text-base font-bold flex items-center gap-2 bg-amber-50 px-5 py-2.5 rounded-full border border-amber-200 w-full justify-center text-center">
+                            <AlertCircle className="w-5 h-5 shrink-0" /> Certificato Medico Scaduto o Mancante
+                        </div>
+                    )}
+
+                    <Button size="lg" className="h-20 w-full text-2xl mt-6 shadow-xl active:scale-95 transition-all rounded-2xl" onClick={() => setShowFullCard(true)}>
+                        <User className="mr-3 h-8 w-8" />
+                        Apri Scheda Completa
+                    </Button>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="w-full max-w-xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 px-4 pt-6 pb-24 md:pt-10">
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-center md:text-left">Esito Scansione</h1>
@@ -246,7 +383,12 @@ function ScannerContent() {
                 </CardHeader>
                 <CardContent className="space-y-6 pt-6 px-4 md:px-6">
                     <div>
-                        <h3 className="font-semibold text-base md:text-lg border-b pb-2 mb-3 text-muted-foreground">Pacchetto Corsi Selezionati</h3>
+                        <div className="flex items-center justify-between border-b pb-2 mb-3">
+                            <h3 className="font-semibold text-base md:text-lg text-muted-foreground">Pacchetto Corsi Selezionati</h3>
+                            <Button variant="outline" size="sm" onClick={openEditCorsi} className="h-8 shadow-sm">
+                                <Edit className="w-3.5 h-3.5 mr-1.5" /> Modifica
+                            </Button>
+                        </div>
                         <ul className="space-y-2.5">
                             {allievo.iscrizioni_corsi?.map((iscr: any, i: number) => (
                                 <li key={i} className="flex justify-between items-center bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-lg shadow-sm">
@@ -458,6 +600,50 @@ function ScannerContent() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Modalifica Corsi Allievo */}
+            <Dialog open={isEditCorsiOpen} onOpenChange={setIsEditCorsiOpen}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle>Modifica Corsi Allievo</DialogTitle>
+                        <DialogDescription>
+                            Seleziona o deseleziona i corsi a cui l'allievo parteciperà da qui in avanti.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="py-4 space-y-3 max-h-[50vh] overflow-y-auto">
+                        {allCorsi.map(corso => {
+                            const isChecked = selectedCorsiIds.includes(corso.id);
+                            return (
+                                <div 
+                                    key={corso.id} 
+                                    className={`flex items-center justify-between p-3 rounded-md border cursor-pointer select-none transition-colors ${isChecked ? 'bg-primary/10 border-primary' : 'bg-muted/30 border-border hover:bg-muted'}`}
+                                    onClick={() => {
+                                        if (isChecked) {
+                                            setSelectedCorsiIds(selectedCorsiIds.filter(id => id !== corso.id));
+                                        } else {
+                                            setSelectedCorsiIds([...selectedCorsiIds, corso.id]);
+                                        }
+                                    }}
+                                >
+                                    <span className={`font-semibold ${isChecked ? 'text-primary' : 'text-foreground'}`}>
+                                        {corso.nome}
+                                    </span>
+                                    <span className="text-sm font-medium text-muted-foreground">
+                                        {corso.prezzo_standard === 0 ? "In Segreteria" : `€ ${corso.prezzo_standard.toFixed(2)}`}
+                                    </span>
+                                </div>
+                            )
+                        })}
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEditCorsiOpen(false)}>Annulla</Button>
+                        <Button onClick={handleSaveCorsi} disabled={isSavingCorsi}>
+                            {isSavingCorsi ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salva e Aggiorna"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
         </div>
     )
 }

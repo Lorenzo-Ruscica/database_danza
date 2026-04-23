@@ -14,6 +14,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+import { Input } from "@/components/ui/input"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
 import { StampaListaCorsi } from "@/components/admin/stampa-registro"
@@ -25,6 +26,8 @@ export default function PresenzePage() {
     const [corsoSelezionato, setCorsoSelezionato] = useState<string>("")
     const [isPrinting, setIsPrinting] = useState(false)
     const [isLoading, setIsLoading] = useState(true)
+    const [dataSelezionata, setDataSelezionata] = useState<string>(new Date().toISOString().split('T')[0])
+    const [isSavingPresenze, setIsSavingPresenze] = useState(false)
 
     const supabase = createClient()
 
@@ -41,10 +44,10 @@ export default function PresenzePage() {
         fetchCorsi()
     }, [])
 
-    // 2. Fetch students when a course is selected
+    // 2. Fetch students and attendances for the selected date
     useEffect(() => {
         const fetchIscritti = async () => {
-            if (!corsoSelezionato) return;
+            if (!corsoSelezionato || !dataSelezionata) return;
 
             setIsLoading(true)
             const { data, error } = await supabase
@@ -58,6 +61,14 @@ export default function PresenzePage() {
                 `)
                 .eq('corso_id', corsoSelezionato)
 
+            const { data: presenzeData } = await supabase
+                .from('presenze')
+                .select('allievo_id')
+                .eq('corso_id', corsoSelezionato)
+                .eq('data_presenza', dataSelezionata)
+
+            const presentIds = new Set(presenzeData?.map(p => p.allievo_id) || [])
+
             if (data) {
                 const mappedIscritti = data
                     .filter((d: any) => d.allievi)
@@ -66,7 +77,7 @@ export default function PresenzePage() {
                         return {
                             id: allievoData.id,
                             nome: `${allievoData.cognome} ${allievoData.nome}`,
-                            presente: false // Reset presenze by default today
+                            presente: presentIds.has(allievoData.id)
                         }
                     })
                     .sort((a, b) => a.nome.localeCompare(b.nome))
@@ -76,12 +87,42 @@ export default function PresenzePage() {
             setIsLoading(false)
         }
         fetchIscritti()
-    }, [corsoSelezionato])
+    }, [corsoSelezionato, dataSelezionata])
 
     const togglePresenza = (id: string) => {
         setIscritti(iscritti.map(i =>
             i.id === id ? { ...i, presente: !i.presente } : i
         ))
+    }
+
+    const handleSaveRegistro = async () => {
+        setIsSavingPresenze(true)
+        try {
+            // Elimina tutte le presenze correnti per questo corso in questa data
+            await supabase
+                .from('presenze')
+                .delete()
+                .eq('corso_id', corsoSelezionato)
+                .eq('data_presenza', dataSelezionata)
+
+            // Re-inserisce solo quelli presenti
+            const presenti = iscritti.filter(i => i.presente)
+            if (presenti.length > 0) {
+                const inserts = presenti.map(p => ({
+                    corso_id: corsoSelezionato,
+                    allievo_id: p.id,
+                    data_presenza: dataSelezionata
+                }))
+                const { error } = await supabase.from('presenze').insert(inserts)
+                if (error) throw error
+            }
+            alert("Registro presenze salvato correttamente!")
+        } catch (err: any) {
+            console.error(err)
+            alert("Errore salvataggio presenze: verifica che la tabella 'presenze' esista sul database. " + err.message)
+        } finally {
+            setIsSavingPresenze(false)
+        }
     }
 
     const handlePrintRegistro = () => {
@@ -106,11 +147,18 @@ export default function PresenzePage() {
                     <h1 className="text-3xl font-bold tracking-tight">Registro Presenze</h1>
                     <div className="flex items-center text-muted-foreground mt-1">
                         <CalendarDays className="mr-2 h-4 w-4" />
-                        {format(new Date(), "EEEE d MMMM yyyy", { locale: it })}
+                        {dataSelezionata ? format(new Date(dataSelezionata), "EEEE d MMMM yyyy", { locale: it }) : "Seleziona una data"}
                     </div>
                 </div>
 
-                <div className="w-full md:w-[300px]">
+                <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                    <Input 
+                        type="date"
+                        value={dataSelezionata}
+                        onChange={(e) => setDataSelezionata(e.target.value)}
+                        className="h-14 text-lg w-full md:w-[200px]"
+                    />
+                    <div className="w-full md:w-[300px]">
                     <Select value={corsoSelezionato} onValueChange={setCorsoSelezionato}>
                         <SelectTrigger className="h-14 text-lg">
                             <SelectValue placeholder="Seleziona Corso" />
@@ -179,8 +227,13 @@ export default function PresenzePage() {
                     <Printer className="mr-2 h-5 w-5" />
                     Stampa Lista Vuota
                 </Button>
-                <Button size="lg" className="h-14 px-8 text-lg w-full sm:w-auto">
-                    Salva Registro ({iscritti.filter(i => i.presente).length} presenti)
+                <Button 
+                    size="lg" 
+                    className="h-14 px-8 text-lg w-full sm:w-auto"
+                    onClick={handleSaveRegistro}
+                    disabled={isSavingPresenze || isLoading}
+                >
+                    {isSavingPresenze ? <Loader2 className="mr-2 h-5 w-5 animate-spin"/> : "Salva Registro"} ({iscritti.filter(i => i.presente).length} presenti)
                 </Button>
             </div>
         </div>
