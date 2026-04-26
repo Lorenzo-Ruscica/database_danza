@@ -201,7 +201,7 @@ export default function PresenzePage() {
         const allievo = iscritti[allievoIndex];
 
         if (allievo.presente) {
-            toast.info(`${allievo.nome} ${allievo.cognome} è già registrato come presente.`);
+            toast.info(`${allievo.nome} è già registrato come presente.`);
             return;
         }
 
@@ -216,7 +216,7 @@ export default function PresenzePage() {
                 data_presenza: dataSelezionata
             });
             if (error) throw error;
-            toast.success(`✅ Presenza registrata: ${allievo.nome} ${allievo.cognome}`);
+            toast.success(`✅ Presenza registrata: ${allievo.nome}`);
         } catch (err) {
             console.error("Errore salvataggio presenza rapida:", err);
             toast.error(`Errore nel salvare la presenza di ${allievo.nome}`);
