@@ -83,7 +83,7 @@ export default function KioskPage() {
       <div className={`absolute top-[30%] left-[60%] w-[35vw] h-[35vw] blur-[100px] rounded-full pointer-events-none animate-float-1 opacity-50 ${isDark ? "bg-blue-800/[0.2]" : "bg-indigo-300/[0.2]"}`} style={{ animationDelay: '-8s', animationDuration: '25s' }} />
 
       {/* Global Kiosk Interactions */}
-      <InactivityTimer onTimeout={handleReset} />
+      <InactivityTimer onTimeout={handleReset} isActive={step > 1 || anagrafica.nome !== '' || anagrafica.cognome !== ''} />
       <VirtualKeyboard />
 
 
@@ -109,7 +109,7 @@ export default function KioskPage() {
 
         <div className="relative inline-block mb-3 text-center group">
           <Image 
-            src="/logo.png" 
+            src="/logo_Bigdance.png" 
             alt="BigDance Logo" 
             width={320} 
             height={140} 

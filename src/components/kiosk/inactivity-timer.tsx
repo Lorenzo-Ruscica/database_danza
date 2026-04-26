@@ -4,9 +4,10 @@ import { useEffect, useState, useRef } from "react"
 
 interface InactivityTimerProps {
     onTimeout: () => void;
+    isActive?: boolean;
 }
 
-export function InactivityTimer({ onTimeout }: InactivityTimerProps) {
+export function InactivityTimer({ onTimeout, isActive = true }: InactivityTimerProps) {
     const [isIdle, setIsIdle] = useState(false);
     const [countdown, setCountdown] = useState(90); // 1 minuto e 30 secondi
     const [mounted, setMounted] = useState(false);
@@ -32,6 +33,13 @@ export function InactivityTimer({ onTimeout }: InactivityTimerProps) {
     };
 
     useEffect(() => {
+        if (!isActive) {
+            setIsIdle(false);
+            if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
+            if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+            return;
+        }
+
         // Initial start
         resetTimers();
 
@@ -48,7 +56,7 @@ export function InactivityTimer({ onTimeout }: InactivityTimerProps) {
             if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
             if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
         };
-    }, []);
+    }, [isActive]);
 
     useEffect(() => {
         if (isIdle) {

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Users, BookOpen, Receipt, CheckSquare } from "lucide-react"
+import { Users, BookOpen, Receipt, CheckSquare, Mail } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const routes = [
@@ -25,6 +25,11 @@ const routes = [
         label: "Presenze",
         icon: CheckSquare,
         href: "/admin/presenze",
+    },
+    {
+        label: "Messaggi",
+        icon: Mail,
+        href: "/admin/comunicazioni",
     },
 ]
 

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { CheckCircle2, AlertCircle, Euro, User, Loader2, Download, Upload, Edit } from "lucide-react"
 
 // FORZA IL RENDERING DINAMICO: Risolve l'errore "Command npm run build exited with 1" su Vercel
@@ -14,6 +15,7 @@ export const dynamic = 'force-dynamic';
 function ScannerContent() {
     const searchParams = useSearchParams()
     const id = searchParams.get('id')
+    const isFull = searchParams.get('full') === 'true'
     const supabase = createClient()
 
     const [allievo, setAllievo] = useState<any>(null)
@@ -21,15 +23,23 @@ function ScannerContent() {
     const [pagamentoFatto, setPagamentoFatto] = useState(false)
     const [firmaError, setFirmaError] = useState(false)
     const [isUploadingCertificato, setIsUploadingCertificato] = useState(false)
+    const [isUploadingFirma, setIsUploadingFirma] = useState(false)
     const [scadenzaInput, setScadenzaInput] = useState("")
+    const [showCertificatoUpload, setShowCertificatoUpload] = useState(false)
+    const [showFirmaUpload, setShowFirmaUpload] = useState(false)
 
     const [isEditCorsiOpen, setIsEditCorsiOpen] = useState(false)
     const [allCorsi, setAllCorsi] = useState<any[]>([])
-    const [selectedCorsiIds, setSelectedCorsiIds] = useState<string[]>([])
+    const [selectedCorsiCustom, setSelectedCorsiCustom] = useState<{corso_id: string, prezzo_personalizzato?: number | null}[]>([])
     const [isSavingCorsi, setIsSavingCorsi] = useState(false)
 
+    // Modifica Dati
+    const [isEditDatiOpen, setIsEditDatiOpen] = useState(false)
+    const [datiForm, setDatiForm] = useState<any>({})
+    const [isSavingDati, setIsSavingDati] = useState(false)
+
     // Fast Mode States
-    const [showFullCard, setShowFullCard] = useState(false)
+    const [showFullCard, setShowFullCard] = useState(isFull)
     const [presenzaRegistrata, setPresenzaRegistrata] = useState(false)
 
     useEffect(() => {
@@ -39,14 +49,15 @@ function ScannerContent() {
                 return
             }
             try {
-                // Preleva l'allievo e i suoi corsi tramite la tabella ponte iscrizioni_corsi
-                const { data, error } = await supabase
+                const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+                let query = supabase
                     .from('allievi')
                     .select(`
                         id,
                         nome,
                         cognome,
                         tessera_numero,
+                        iscrizione_pagata,
                         codice_fiscale,
                         data_nascita,
                         luogo_nascita,
@@ -62,6 +73,7 @@ function ScannerContent() {
                         tutore_codice_fiscale,
                         iscrizioni_corsi (
                             corso_id,
+                            prezzo_personalizzato,
                             corsi (
                                 id,
                                 nome,
@@ -73,8 +85,14 @@ function ScannerContent() {
                             data_scadenza
                         )
                     `)
-                    .eq('id', id)
-                    .single()
+
+                if (isUUID) {
+                    query = query.eq('id', id)
+                } else {
+                    query = query.or(`tessera_numero.eq.${id},codice_fiscale.ilike.${id}`)
+                }
+
+                const { data, error } = await query.single()
 
                 if (error) throw error
 
@@ -88,41 +106,50 @@ function ScannerContent() {
                     const { data: checkPagamento } = await supabase
                         .from('pagamenti')
                         .select('id')
-                        .eq('allievo_id', id)
+                        .eq('allievo_id', data.id)
                         .eq('mese_riferimento', meseT)
 
                     if (checkPagamento && checkPagamento.length > 0) {
                         setPagamentoFatto(true)
                     }
 
-                    // AUTO-REGISTRA PRESENZE
-                    const todayDateString = today.toISOString().split('T')[0];
-                    if (data.iscrizioni_corsi && data.iscrizioni_corsi.length > 0) {
-                        // verify if already present
-                        const { data: presenzeGiaEsistenti } = await supabase
-                            .from('presenze')
-                            .select('corso_id')
-                            .eq('allievo_id', id)
-                            .eq('data_presenza', todayDateString);
-                            
-                        const corsiIdsToInsert = data.iscrizioni_corsi
-                            .map((iscr: any) => iscr.corso_id)
-                            .filter((cId: string) => !presenzeGiaEsistenti?.find((p: any) => p.corso_id === cId));
+                    // AUTO-REGISTRA PRESENZE SOLO SE NON E' APERTO TRAMITE ADMIN (isFull=false)
+                    if (!isFull) {
+                        const todayDateString = today.toISOString().split('T')[0];
+                        if (data.iscrizioni_corsi && data.iscrizioni_corsi.length > 0) {
+                                // verify if already present
+                                const { data: presenzeGiaEsistenti } = await supabase
+                                    .from('presenze')
+                                    .select('corso_id')
+                                    .eq('allievo_id', data.id)
+                                    .eq('data_presenza', todayDateString);
+                                    
+                                const uniqueCorsiIds = Array.from(new Set(data.iscrizioni_corsi.map((iscr: any) => iscr.corso_id))) as string[];
+                                const corsiIdsToInsert = uniqueCorsiIds
+                                    .filter((cId: string) => !presenzeGiaEsistenti?.find((p: any) => p.corso_id === cId));
 
-                        if (corsiIdsToInsert.length > 0) {
-                            const inserts = corsiIdsToInsert.map((cId: string) => ({
-                                allievo_id: id,
-                                corso_id: cId,
-                                data_presenza: todayDateString
-                            }));
-                            await supabase.from('presenze').insert(inserts);
-                            setPresenzaRegistrata(true);
-                        } else {
-                            // Erano già state registrate oggi
-                            setPresenzaRegistrata(true);
+                                if (corsiIdsToInsert.length > 0) {
+                                    const inserts = corsiIdsToInsert.map((cId: string) => ({
+                                        allievo_id: data.id,
+                                        corso_id: cId,
+                                        data_presenza: todayDateString
+                                    }));
+                                    const { error: insertErr } = await supabase.from('presenze').insert(inserts);
+                                    
+                                    // Ignoriamo l'errore 23505 (unique_violation) che capita col React Strict Mode (doppio rendering simultaneo)
+                                    if (insertErr && insertErr.code !== '23505') {
+                                        console.error("Errore salvataggio presenze:", insertErr);
+                                        alert("Errore registrazione presenza: " + insertErr.message);
+                                    } else {
+                                        setPresenzaRegistrata(true);
+                                    }
+                                } else {
+                                    // Erano già state registrate oggi
+                                    setPresenzaRegistrata(true);
+                                }
+                            }
                         }
                     }
-                }
                 
                 const { data: corsiData } = await supabase.from('corsi').select('id, nome, prezzo_standard').order('nome')
                 if (corsiData) setAllCorsi(corsiData)
@@ -137,8 +164,11 @@ function ScannerContent() {
     }, [id, supabase])
 
     const openEditCorsi = () => {
-        const currentIds = allievo.iscrizioni_corsi?.map((iscr: any) => iscr.corso_id).filter(Boolean) || [];
-        setSelectedCorsiIds(currentIds);
+        const currentCorsi = allievo.iscrizioni_corsi?.map((iscr: any) => ({
+            corso_id: iscr.corso_id,
+            prezzo_personalizzato: iscr.prezzo_personalizzato
+        })) || [];
+        setSelectedCorsiCustom(currentCorsi);
         setIsEditCorsiOpen(true);
     };
 
@@ -146,13 +176,14 @@ function ScannerContent() {
         setIsSavingCorsi(true);
         try {
             // Elimina tutte le iscrizioni correnti per questo allievo
-            await supabase.from('iscrizioni_corsi').delete().eq('allievo_id', id);
+            await supabase.from('iscrizioni_corsi').delete().eq('allievo_id', allievo.id);
             
             // Inserisci le nuove iscrizioni
-            if (selectedCorsiIds.length > 0) {
-                const inserts = selectedCorsiIds.map(corsoId => ({
-                    allievo_id: id,
-                    corso_id: corsoId
+            if (selectedCorsiCustom.length > 0) {
+                const inserts = selectedCorsiCustom.map(c => ({
+                    allievo_id: allievo.id,
+                    corso_id: c.corso_id,
+                    prezzo_personalizzato: c.prezzo_personalizzato
                 }));
                 const { error } = await supabase.from('iscrizioni_corsi').insert(inserts);
                 if (error) throw error;
@@ -161,11 +192,46 @@ function ScannerContent() {
             alert("Corsi studente aggiornati con successo!");
             window.location.reload();
         } catch (err: any) {
-            alert("Errore salva corsi: " + err.message);
+            alert("Errore salva corsi: Assicurati di aver aggiunto la colonna 'prezzo_personalizzato' nel database.\n" + err.message);
         } finally {
             setIsSavingCorsi(false);
         }
     };
+
+    const openEditDati = () => {
+        setDatiForm({
+            nome: allievo.nome || '',
+            cognome: allievo.cognome || '',
+            codice_fiscale: allievo.codice_fiscale || '',
+            data_nascita: allievo.data_nascita ? new Date(allievo.data_nascita).toISOString().split('T')[0] : '',
+            luogo_nascita: allievo.luogo_nascita || '',
+            provincia_nascita: allievo.provincia_nascita || '',
+            indirizzo_residenza: allievo.indirizzo_residenza || '',
+            cap_residenza: allievo.cap_residenza || '',
+            provincia_residenza: allievo.provincia_residenza || '',
+            telefono: allievo.telefono || '',
+            email: allievo.email || '',
+            tessera_numero: allievo.tessera_numero || '',
+            tutore_nome: allievo.tutore_nome || '',
+            tutore_cognome: allievo.tutore_cognome || '',
+            tutore_codice_fiscale: allievo.tutore_codice_fiscale || '',
+        })
+        setIsEditDatiOpen(true)
+    }
+
+    const handleSaveDati = async () => {
+        setIsSavingDati(true)
+        try {
+            const { error } = await supabase.from('allievi').update(datiForm).eq('id', allievo.id)
+            if (error) throw error
+            alert("Dati anagrafici aggiornati con successo!")
+            window.location.reload()
+        } catch (e: any) {
+            alert("Errore aggiornamento dati: " + e.message)
+        } finally {
+            setIsSavingDati(false)
+        }
+    }
 
     const handleRegistraPagamento = async () => {
         if (!allievo) return
@@ -177,7 +243,11 @@ function ScannerContent() {
         try {
             const today = new Date()
             const meseT = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
-            const importo = allievo.iscrizioni_corsi?.reduce((acc: number, iscr: any) => acc + (iscr.corsi?.prezzo_standard || 0), 0) || 0
+            const importo = allievo.iscrizioni_corsi?.reduce((acc: number, iscr: any) => {
+                const isCustomPrice = iscr.prezzo_personalizzato !== null && iscr.prezzo_personalizzato !== undefined;
+                const price = isCustomPrice ? Number(iscr.prezzo_personalizzato) : (iscr.corsi?.prezzo_standard || 0);
+                return acc + price;
+            }, 0) || 0;
 
             const { error } = await supabase.from('pagamenti').insert([{
                 allievo_id: allievo.id,
@@ -186,6 +256,10 @@ function ScannerContent() {
             }])
 
             if (error) throw error
+
+            const { error: updateErr } = await supabase.from('allievi').update({ iscrizione_pagata: true }).eq('id', allievo.id)
+            if (updateErr) throw updateErr
+
             setPagamentoFatto(true)
 
             // Invia la Tessera Definitiva via email
@@ -197,7 +271,8 @@ function ScannerContent() {
                         body: JSON.stringify({
                             email: allievo.email,
                             tessera_numero: allievo.tessera_numero,
-                            nome: `${allievo.nome} ${allievo.cognome}`
+                            nome: `${allievo.nome} ${allievo.cognome}`,
+                            codice_fiscale: allievo.codice_fiscale || ''
                         })
                     });
                     // Feedback per l'amministratore
@@ -229,14 +304,14 @@ function ScannerContent() {
 
         setIsUploadingCertificato(true);
         try {
-            const fileName = `${id}-${Date.now()}.jpg`
+            const fileName = `${allievo.id}-${Date.now()}.jpg`
             const { data: uploadData, error: uploadErr } = await supabase.storage.from('certificati').upload(fileName, file)
 
             if (uploadErr) throw uploadErr;
 
             if (uploadData) {
                 const { error: certErr } = await supabase.from('certificati').insert([{
-                    allievo_id: id,
+                    allievo_id: allievo.id,
                     url_foto: uploadData.path,
                     data_scadenza: scadenzaInput
                 }])
@@ -252,6 +327,28 @@ function ScannerContent() {
             alert("Errore durante il caricamento del certificato: " + msg);
         } finally {
             setIsUploadingCertificato(false);
+        }
+    }
+
+    const handleUploadFirma = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !allievo) return;
+
+        setIsUploadingFirma(true);
+        try {
+            const fileName = `firma-${allievo.id}.png`;
+            // Upsert per sovrascrivere se esiste già
+            const { error: uploadErr } = await supabase.storage.from('firme').upload(fileName, file, { upsert: true });
+
+            if (uploadErr) throw uploadErr;
+
+            alert("Firma caricata con successo!");
+            window.location.reload();
+        } catch (err: any) {
+            console.error("Errore upload firma", err);
+            alert("Errore durante il caricamento della firma: " + (err?.message || "Errore sconosciuto"));
+        } finally {
+            setIsUploadingFirma(false);
         }
     }
 
@@ -274,9 +371,13 @@ function ScannerContent() {
         )
     }
 
-    const totaleDaPagare = allievo.iscrizioni_corsi?.reduce((acc: number, iscr: any) => acc + (iscr.corsi?.prezzo_standard || 0), 0) || 0
+    const totaleDaPagare = allievo.iscrizioni_corsi?.reduce((acc: number, iscr: any) => {
+        const isCustomPrice = iscr.prezzo_personalizzato !== null && iscr.prezzo_personalizzato !== undefined;
+        const price = isCustomPrice ? Number(iscr.prezzo_personalizzato) : (iscr.corsi?.prezzo_standard || 0);
+        return acc + price;
+    }, 0) || 0;
     const hasCertificato = allievo.certificati && allievo.certificati.length > 0 && allievo.certificati[0]?.url_foto;
-    const hasCorsiInSegreteria = allievo.iscrizioni_corsi?.some((iscr: any) => iscr.corsi?.prezzo_standard === 0);
+    const hasCorsiInSegreteria = allievo.iscrizioni_corsi?.some((iscr: any) => iscr.corsi?.prezzo_standard === 0 && (iscr.prezzo_personalizzato === null || iscr.prezzo_personalizzato === undefined));
     const noCorsiAtAll = !allievo.iscrizioni_corsi || allievo.iscrizioni_corsi.length === 0;
 
     if (!showFullCard) {
@@ -320,21 +421,13 @@ function ScannerContent() {
                 </div>
 
                 <div className="mt-8 flex flex-col items-center gap-4 w-full max-w-md pb-12">
-                    {/* Avvisi rapidi in rosso o giallo */}
-                    {!pagamentoFatto && (
-                        <div className="text-destructive text-sm md:text-base font-bold flex items-center gap-2 bg-destructive/10 px-5 py-2.5 rounded-full border border-destructive/20 w-full justify-center text-center">
-                            <AlertCircle className="w-5 h-5 shrink-0" /> Pagamento Mese Attuale da Confermare in Segreteria
-                        </div>
-                    )}
-                    {!hasCertificato && (
-                        <div className="text-amber-700 text-sm md:text-base font-bold flex items-center gap-2 bg-amber-50 px-5 py-2.5 rounded-full border border-amber-200 w-full justify-center text-center">
-                            <AlertCircle className="w-5 h-5 shrink-0" /> Certificato Medico Scaduto o Mancante
-                        </div>
-                    )}
-
-                    <Button size="lg" className="h-20 w-full text-2xl mt-6 shadow-xl active:scale-95 transition-all rounded-2xl" onClick={() => setShowFullCard(true)}>
-                        <User className="mr-3 h-8 w-8" />
-                        Apri Scheda Completa
+                    <Button 
+                        size="lg" 
+                        variant="outline"
+                        className="h-16 w-full text-xl mt-6 shadow-sm active:scale-95 transition-all rounded-2xl border-2" 
+                        onClick={() => window.location.href = '/admin/presenze'}
+                    >
+                        Torna al Registro Presenze
                     </Button>
                 </div>
             </div>
@@ -390,14 +483,27 @@ function ScannerContent() {
                             </Button>
                         </div>
                         <ul className="space-y-2.5">
-                            {allievo.iscrizioni_corsi?.map((iscr: any, i: number) => (
-                                <li key={i} className="flex justify-between items-center bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-lg shadow-sm">
-                                    <span className="font-medium text-sm md:text-base">{iscr.corsi.nome}</span>
-                                    <span className="text-muted-foreground font-semibold">
-                                        {iscr.corsi.prezzo_standard === 0 ? "In Segreteria" : `€ ${iscr.corsi.prezzo_standard.toFixed(2)}`}
-                                    </span>
-                                </li>
-                            ))}
+                            {allievo.iscrizioni_corsi?.map((iscr: any, i: number) => {
+                                const isCustomPrice = iscr.prezzo_personalizzato !== null && iscr.prezzo_personalizzato !== undefined;
+                                const displayPrice = isCustomPrice ? Number(iscr.prezzo_personalizzato) : iscr.corsi.prezzo_standard;
+                                const isSegreteria = iscr.corsi.prezzo_standard === 0 && !isCustomPrice;
+                                
+                                return (
+                                    <li key={i} className="flex justify-between items-center bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 p-3 rounded-lg shadow-sm">
+                                        <span className="font-medium text-sm md:text-base">{iscr.corsi.nome}</span>
+                                        <span className="text-muted-foreground font-semibold flex items-center gap-1">
+                                            {isSegreteria ? (
+                                                "In Segreteria"
+                                            ) : (
+                                                <>
+                                                    <Euro className="h-3.5 w-3.5" /> {displayPrice.toFixed(2)}
+                                                    {isCustomPrice && <span className="text-[10px] uppercase bg-primary/10 text-primary px-1.5 py-0.5 rounded ml-1 font-bold">Modificato</span>}
+                                                </>
+                                            )}
+                                        </span>
+                                    </li>
+                                );
+                            })}
                             {(!allievo.iscrizioni_corsi || allievo.iscrizioni_corsi.length === 0) && (
                                 <li className="text-muted-foreground bg-zinc-50 border p-3 rounded-lg text-sm text-center">Nessun corso attivo trovato</li>
                             )}
@@ -442,8 +548,11 @@ function ScannerContent() {
             </Card>
 
             <Card className="shadow-sm">
-                <CardHeader className="py-4 border-b">
+                <CardHeader className="py-4 border-b flex flex-row items-center justify-between">
                     <CardTitle className="text-lg">Dati Anagrafici e Contatti</CardTitle>
+                    <Button variant="outline" size="sm" onClick={openEditDati} className="h-8 shadow-sm">
+                        <Edit className="w-3.5 h-3.5 mr-1.5" /> Modifica Dati
+                    </Button>
                 </CardHeader>
                 <CardContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                     <div>
@@ -482,7 +591,7 @@ function ScannerContent() {
                                 size="sm"
                                 className="h-8 gap-1.5 align-middle"
                                 onClick={async () => {
-                                    const imgUrl = supabase.storage.from('firme').getPublicUrl(`firma-${id}.png`).data.publicUrl;
+                                    const imgUrl = supabase.storage.from('firme').getPublicUrl(`firma-${allievo.id}.png`).data.publicUrl;
                                     try {
                                         const response = await fetch(imgUrl);
                                         const blob = await response.blob();
@@ -505,16 +614,39 @@ function ScannerContent() {
                         )}
                     </CardHeader>
                     <CardContent className="pt-4 flex justify-center">
-                        {!firmaError ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                                src={supabase.storage.from('firme').getPublicUrl(`firma-${id}.png`).data.publicUrl}
-                                alt="Firma Studente"
-                                className="w-full max-w-sm h-40 object-contain bg-zinc-50 border rounded-lg"
-                                onError={() => setFirmaError(true)}
-                            />
+                        {!firmaError && !showFirmaUpload ? (
+                            <div className="w-full flex flex-col items-center">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                    src={supabase.storage.from('firme').getPublicUrl(`firma-${allievo.id}.png`).data.publicUrl}
+                                    alt="Firma Studente"
+                                    className="w-full max-w-sm h-40 object-contain bg-zinc-50 border rounded-lg"
+                                    onError={() => setFirmaError(true)}
+                                />
+                                <Button variant="ghost" size="sm" className="mt-3 text-muted-foreground" onClick={() => setShowFirmaUpload(true)}>
+                                    Sostituisci Firma
+                                </Button>
+                            </div>
                         ) : (
-                            <p className="text-sm text-muted-foreground text-center py-8">Nessuna firma digitale trovata a sistema.</p>
+                            <div className="flex flex-col items-center justify-center py-6 w-full max-w-sm mx-auto">
+                                {firmaError && <p className="text-sm text-muted-foreground text-center mb-4">Nessuna firma digitale trovata a sistema.</p>}
+                                
+                                <label className={`cursor-pointer hover:bg-primary/90 bg-primary text-primary-foreground font-semibold px-4 py-3 rounded-md w-full flex justify-center items-center gap-2 transition-colors`}>
+                                    {isUploadingFirma ? <Loader2 className="h-5 w-5 animate-spin" /> : <Upload className="h-5 w-5" />}
+                                    {isUploadingFirma ? "Caricamento in corso..." : "Carica Foto Firma"}
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        capture="environment"
+                                        className="hidden"
+                                        onChange={handleUploadFirma}
+                                        disabled={isUploadingFirma}
+                                    />
+                                </label>
+                                {showFirmaUpload && !firmaError && (
+                                    <Button variant="ghost" size="sm" className="mt-2" onClick={() => setShowFirmaUpload(false)}>Annulla</Button>
+                                )}
+                            </div>
                         )}
                     </CardContent>
                 </Card>
@@ -560,17 +692,24 @@ function ScannerContent() {
                         </div>
                     </CardHeader>
                     <CardContent className="pt-4">
-                        {allievo.certificati && allievo.certificati[0]?.url_foto ? (
-                            /* eslint-disable-next-line @next/next/no-img-element */
-                            <img
-                                src={supabase.storage.from('certificati').getPublicUrl(allievo.certificati[0].url_foto).data.publicUrl}
-                                alt="Certificato Medico"
-                                className="w-full h-40 object-cover cursor-pointer hover:opacity-90 transition-opacity border rounded-lg"
-                                onClick={() => window.open(supabase.storage.from('certificati').getPublicUrl(allievo.certificati[0].url_foto).data.publicUrl, '_blank')}
-                            />
+                        {allievo.certificati && allievo.certificati[0]?.url_foto && !showCertificatoUpload ? (
+                            <div className="w-full flex flex-col items-center">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                    src={supabase.storage.from('certificati').getPublicUrl(allievo.certificati[0].url_foto).data.publicUrl}
+                                    alt="Certificato Medico"
+                                    className="w-full h-40 object-cover cursor-pointer hover:opacity-90 transition-opacity border rounded-lg"
+                                    onClick={() => window.open(supabase.storage.from('certificati').getPublicUrl(allievo.certificati[0].url_foto).data.publicUrl, '_blank')}
+                                />
+                                <Button variant="ghost" size="sm" className="mt-3 text-muted-foreground" onClick={() => setShowCertificatoUpload(true)}>
+                                    Sostituisci Certificato
+                                </Button>
+                            </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-6 w-full max-w-sm mx-auto">
-                                <p className="text-sm text-destructive font-bold text-center mb-4">Manca il Certificato! Impossibile Saldare.</p>
+                                {(!allievo.certificati || !allievo.certificati[0]?.url_foto) && (
+                                    <p className="text-sm text-destructive font-bold text-center mb-4">Manca il Certificato! Impossibile Saldare.</p>
+                                )}
 
                                 <div className="w-full space-y-3 mb-5">
                                     <label className="text-sm font-semibold text-muted-foreground block text-left">1. Inserisci la Scadenza del Certificato:</label>
@@ -595,6 +734,9 @@ function ScannerContent() {
                                         disabled={isUploadingCertificato || !scadenzaInput}
                                     />
                                 </label>
+                                {showCertificatoUpload && (
+                                    <Button variant="ghost" size="sm" className="mt-2" onClick={() => setShowCertificatoUpload(false)}>Annulla</Button>
+                                )}
                             </div>
                         )}
                     </CardContent>
@@ -603,34 +745,64 @@ function ScannerContent() {
 
             {/* Modalifica Corsi Allievo */}
             <Dialog open={isEditCorsiOpen} onOpenChange={setIsEditCorsiOpen}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[450px]">
                     <DialogHeader>
                         <DialogTitle>Modifica Corsi Allievo</DialogTitle>
                         <DialogDescription>
                             Seleziona o deseleziona i corsi a cui l'allievo parteciperà da qui in avanti.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="py-4 space-y-3 max-h-[50vh] overflow-y-auto">
+                    <div className="py-4 space-y-3 max-h-[55vh] overflow-y-auto px-1">
                         {allCorsi.map(corso => {
-                            const isChecked = selectedCorsiIds.includes(corso.id);
+                            const selectedIscr = selectedCorsiCustom.find(c => c.corso_id === corso.id);
+                            const isChecked = !!selectedIscr;
+                            const isSegreteria = corso.prezzo_standard === 0;
+
                             return (
                                 <div 
                                     key={corso.id} 
-                                    className={`flex items-center justify-between p-3 rounded-md border cursor-pointer select-none transition-colors ${isChecked ? 'bg-primary/10 border-primary' : 'bg-muted/30 border-border hover:bg-muted'}`}
-                                    onClick={() => {
-                                        if (isChecked) {
-                                            setSelectedCorsiIds(selectedCorsiIds.filter(id => id !== corso.id));
-                                        } else {
-                                            setSelectedCorsiIds([...selectedCorsiIds, corso.id]);
-                                        }
-                                    }}
+                                    className={`flex flex-col gap-2 p-3 rounded-md border transition-colors ${isChecked ? 'bg-primary/5 border-primary/50' : 'bg-muted/30 border-border'}`}
                                 >
-                                    <span className={`font-semibold ${isChecked ? 'text-primary' : 'text-foreground'}`}>
-                                        {corso.nome}
-                                    </span>
-                                    <span className="text-sm font-medium text-muted-foreground">
-                                        {corso.prezzo_standard === 0 ? "In Segreteria" : `€ ${corso.prezzo_standard.toFixed(2)}`}
-                                    </span>
+                                    <div className="flex items-center justify-between cursor-pointer" onClick={() => {
+                                        if (isChecked) {
+                                            setSelectedCorsiCustom(selectedCorsiCustom.filter(c => c.corso_id !== corso.id));
+                                        } else {
+                                            setSelectedCorsiCustom([...selectedCorsiCustom, { corso_id: corso.id, prezzo_personalizzato: null }]);
+                                        }
+                                    }}>
+                                        <span className={`font-semibold ${isChecked ? 'text-primary' : 'text-foreground'}`}>
+                                            {corso.nome}
+                                        </span>
+                                        <span className="text-sm font-medium text-muted-foreground">
+                                            {isSegreteria && !selectedIscr?.prezzo_personalizzato ? "In Segreteria" : `€ ${corso.prezzo_standard.toFixed(2)}`}
+                                        </span>
+                                    </div>
+                                    
+                                    {isChecked && isSegreteria && (
+                                        <div className="mt-2 pl-3 border-l-2 border-primary/30 pt-1">
+                                            <label className="text-xs font-semibold text-muted-foreground block mb-1">
+                                                Inserisci il prezzo concordato (€):
+                                            </label>
+                                            <div className="relative">
+                                                <Euro className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                                <Input 
+                                                    type="number" 
+                                                    step="1"
+                                                    min="0"
+                                                    className="pl-8 h-9"
+                                                    placeholder="Es. 35"
+                                                    value={selectedIscr?.prezzo_personalizzato ?? ''}
+                                                    onChange={(e) => {
+                                                        const val = e.target.value ? parseFloat(e.target.value) : null;
+                                                        setSelectedCorsiCustom(selectedCorsiCustom.map(c => 
+                                                            c.corso_id === corso.id ? { ...c, prezzo_personalizzato: val } : c
+                                                        ));
+                                                    }}
+                                                />
+                                            </div>
+                                            <p className="text-[10px] text-muted-foreground mt-1">Questo prezzo verrà sommato al totale mensile dell'allievo.</p>
+                                        </div>
+                                    )}
                                 </div>
                             )
                         })}
@@ -639,6 +811,93 @@ function ScannerContent() {
                         <Button variant="outline" onClick={() => setIsEditCorsiOpen(false)}>Annulla</Button>
                         <Button onClick={handleSaveCorsi} disabled={isSavingCorsi}>
                             {isSavingCorsi ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salva e Aggiorna"}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Modalifica Dati Allievo */}
+            <Dialog open={isEditDatiOpen} onOpenChange={setIsEditDatiOpen}>
+                <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle>Modifica Dati Anagrafici</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 space-y-4 overflow-y-auto px-1 flex-1">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">Nome</label>
+                                <Input value={datiForm.nome} onChange={e => setDatiForm({...datiForm, nome: e.target.value})} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">Cognome</label>
+                                <Input value={datiForm.cognome} onChange={e => setDatiForm({...datiForm, cognome: e.target.value})} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">Codice Fiscale</label>
+                                <Input value={datiForm.codice_fiscale} onChange={e => setDatiForm({...datiForm, codice_fiscale: e.target.value})} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">Data di Nascita</label>
+                                <Input type="date" value={datiForm.data_nascita} onChange={e => setDatiForm({...datiForm, data_nascita: e.target.value})} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">Luogo di Nascita</label>
+                                <Input value={datiForm.luogo_nascita} onChange={e => setDatiForm({...datiForm, luogo_nascita: e.target.value})} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">Prov. Nascita</label>
+                                <Input value={datiForm.provincia_nascita} onChange={e => setDatiForm({...datiForm, provincia_nascita: e.target.value})} />
+                            </div>
+                            <div className="space-y-1 col-span-2">
+                                <label className="text-xs font-semibold text-muted-foreground">Indirizzo Residenza</label>
+                                <Input value={datiForm.indirizzo_residenza} onChange={e => setDatiForm({...datiForm, indirizzo_residenza: e.target.value})} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">CAP</label>
+                                <Input value={datiForm.cap_residenza} onChange={e => setDatiForm({...datiForm, cap_residenza: e.target.value})} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">Prov. Residenza</label>
+                                <Input value={datiForm.provincia_residenza} onChange={e => setDatiForm({...datiForm, provincia_residenza: e.target.value})} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">Telefono</label>
+                                <Input value={datiForm.telefono} onChange={e => setDatiForm({...datiForm, telefono: e.target.value})} />
+                            </div>
+                            <div className="space-y-1">
+                                <label className="text-xs font-semibold text-muted-foreground">Email</label>
+                                <Input type="email" value={datiForm.email} onChange={e => setDatiForm({...datiForm, email: e.target.value})} />
+                            </div>
+                            <div className="space-y-1 col-span-2">
+                                <label className="text-xs font-semibold text-muted-foreground">Numero Tessera (Lasciare vuoto per Da Assegnare)</label>
+                                <Input value={datiForm.tessera_numero} onChange={e => setDatiForm({...datiForm, tessera_numero: e.target.value})} />
+                            </div>
+
+                            {allievo?.is_minore && (
+                                <>
+                                    <div className="col-span-2 mt-2 pt-4 border-t border-border">
+                                        <h4 className="text-sm font-bold text-foreground">Dati Tutore Legale</h4>
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-semibold text-muted-foreground">Nome Tutore</label>
+                                        <Input value={datiForm.tutore_nome || ''} onChange={e => setDatiForm({...datiForm, tutore_nome: e.target.value})} />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <label className="text-xs font-semibold text-muted-foreground">Cognome Tutore</label>
+                                        <Input value={datiForm.tutore_cognome || ''} onChange={e => setDatiForm({...datiForm, tutore_cognome: e.target.value})} />
+                                    </div>
+                                    <div className="space-y-1 col-span-2">
+                                        <label className="text-xs font-semibold text-muted-foreground">Codice Fiscale Tutore</label>
+                                        <Input value={datiForm.tutore_codice_fiscale || ''} onChange={e => setDatiForm({...datiForm, tutore_codice_fiscale: e.target.value})} />
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsEditDatiOpen(false)}>Annulla</Button>
+                        <Button onClick={handleSaveDati} disabled={isSavingDati}>
+                            {isSavingDati ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salva Modifiche"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

@@ -10,13 +10,25 @@ import { Switch } from "@/components/ui/switch"
 export default function Step1Anagrafica() {
     const { anagrafica, updateAnagrafica, nextStep } = useKioskStore()
 
+    const calculatedIsMinor = (() => {
+        if (!anagrafica.dataNascita) return false;
+        const dob = new Date(anagrafica.dataNascita);
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const m = today.getMonth() - dob.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+            age--;
+        }
+        return age < 18;
+    })();
+
     const isFormValid =
         anagrafica.nome &&
         anagrafica.cognome &&
         anagrafica.dataNascita &&
         anagrafica.luogoNascita &&
         anagrafica.provinciaNascita &&
-        (!anagrafica.isMinorenne || (
+        (!(anagrafica.isMinorenne || calculatedIsMinor) || (
             anagrafica.tutoreNome &&
             anagrafica.tutoreCognome &&
             anagrafica.tutoreCodiceFiscale
@@ -56,7 +68,22 @@ export default function Step1Anagrafica() {
                         type="date"
                         className="h-14 text-lg"
                         value={anagrafica.dataNascita}
-                        onChange={e => updateAnagrafica({ dataNascita: e.target.value })}
+                        onChange={e => {
+                            const newDate = e.target.value;
+                            updateAnagrafica({ dataNascita: newDate });
+                            if (newDate) {
+                                const dob = new Date(newDate);
+                                const today = new Date();
+                                let age = today.getFullYear() - dob.getFullYear();
+                                const m = today.getMonth() - dob.getMonth();
+                                if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+                                    age--;
+                                }
+                                if (age < 18) {
+                                    updateAnagrafica({ isMinorenne: true });
+                                }
+                            }
+                        }}
                     />
                 </div>
 
@@ -105,13 +132,18 @@ export default function Step1Anagrafica() {
                         <p className="text-muted-foreground">Richiede i dati del genitore/tutore legale</p>
                     </div>
                     <Switch
-                        checked={anagrafica.isMinorenne}
-                        onCheckedChange={v => updateAnagrafica({ isMinorenne: v })}
+                        checked={anagrafica.isMinorenne || calculatedIsMinor}
+                        onCheckedChange={v => {
+                            if (!calculatedIsMinor) {
+                                updateAnagrafica({ isMinorenne: v })
+                            }
+                        }}
+                        disabled={calculatedIsMinor}
                         className="scale-125 translate-x-[-10px]"
                     />
                 </div>
 
-                {anagrafica.isMinorenne && (
+                {(anagrafica.isMinorenne || calculatedIsMinor) && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-top-2">
                         <div className="space-y-3">
                             <Label className="text-lg">Nome Tutore</Label>

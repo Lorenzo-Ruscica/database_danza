@@ -1,10 +1,133 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import QRCode from 'qrcode';
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
+
+async function generateTesseraPDF(nome: string, tessera_numero: string, qrCodeBase64: string, codice_fiscale: string) {
+    const pdfDoc = await PDFDocument.create();
+    // Orizzontale CR80 approssimato (540x340)
+    const page = pdfDoc.addPage([540, 340]);
+    const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
+
+    // Sfondo Blu Oceano (Theme Primary)
+    page.drawRectangle({
+        x: 0,
+        y: 0,
+        width: 540,
+        height: 340,
+        color: rgb(30/255, 100/255, 200/255), // Ocean Blue
+    });
+
+    // Banda Celeste in basso per dare stile
+    page.drawRectangle({
+        x: 0,
+        y: 0,
+        width: 540,
+        height: 12,
+        color: rgb(147/255, 197/255, 253/255), // Light Blue
+    });
+
+    // LOGO Testuale in alto a sinistra
+    page.drawText('BIGDANCESCHOOL', {
+        x: 30,
+        y: 290,
+        size: 24,
+        font: fontBold,
+        color: rgb(1, 1, 1),
+    });
+
+    page.drawText('TESSERA D\'INGRESSO UFFICIALE', {
+        x: 30,
+        y: 270,
+        size: 10,
+        font: fontRegular,
+        color: rgb(147/255, 197/255, 253/255), // Light Blue
+    });
+
+    // Dati Allievo (A Sinistra)
+    page.drawText('ALLIEVO', {
+        x: 30,
+        y: 190,
+        size: 10,
+        font: fontRegular,
+        color: rgb(0.8, 0.9, 1), // Lightest Blue
+    });
+
+    let nomeStr = nome.toUpperCase();
+    if (fontBold.widthOfTextAtSize(nomeStr, 22) > 260) {
+        nomeStr = nomeStr.substring(0, 18) + '...';
+    }
+    page.drawText(nomeStr, {
+        x: 30,
+        y: 165,
+        size: 22,
+        font: fontBold,
+        color: rgb(1, 1, 1),
+    });
+
+    page.drawText('CODICE FISCALE', {
+        x: 30,
+        y: 120,
+        size: 10,
+        font: fontRegular,
+        color: rgb(0.8, 0.9, 1),
+    });
+
+    page.drawText(codice_fiscale.toUpperCase() || 'N/A', {
+        x: 30,
+        y: 100,
+        size: 14,
+        font: fontBold,
+        color: rgb(1, 1, 1),
+    });
+
+    page.drawText('TESSERA N°', {
+        x: 30,
+        y: 60,
+        size: 10,
+        font: fontRegular,
+        color: rgb(0.8, 0.9, 1),
+    });
+
+    page.drawText(tessera_numero, {
+        x: 30,
+        y: 40,
+        size: 16,
+        font: fontBold,
+        color: rgb(147/255, 197/255, 253/255), // Light Blue
+    });
+
+    // QR CODE (A Destra)
+    const qrSize = 180;
+    const rightMargin = 40;
+    const qrX = 540 - qrSize - rightMargin;
+    const qrY = (340 - qrSize) / 2; // Centrato verticalmente
+
+    // Sfondo Bianco per QR Code
+    page.drawRectangle({
+        x: qrX - 10,
+        y: qrY - 10,
+        width: qrSize + 20,
+        height: qrSize + 20,
+        color: rgb(1, 1, 1),
+    });
+
+    const qrImage = await pdfDoc.embedPng(Buffer.from(qrCodeBase64, 'base64'));
+    page.drawImage(qrImage, {
+        x: qrX,
+        y: qrY,
+        width: qrSize,
+        height: qrSize,
+    });
+
+    const pdfBytes = await pdfDoc.save();
+    return Buffer.from(pdfBytes).toString('base64');
+}
 
 export async function POST(req: Request) {
     try {
-        const { email, tessera_numero, nome } = await req.json();
+        const { email, tessera_numero, nome, codice_fiscale } = await req.json();
 
         if (!email) {
             return NextResponse.json({ error: 'Email non fornita' }, { status: 400 });
@@ -21,6 +144,9 @@ export async function POST(req: Request) {
         });
 
         const base64Data = qrCodeDataUri.replace(/^data:image\/png;base64,/, "");
+        
+        // Genera il PDF
+        const pdfBase64 = await generateTesseraPDF(nome, tessera_numero, base64Data, codice_fiscale || 'N/A');
 
         const transporter = nodemailer.createTransport({
             host: process.env.SMTP_HOST || 'smtp.gmail.com',
@@ -33,16 +159,16 @@ export async function POST(req: Request) {
         });
 
         const mailOptions = {
-            from: `"Scuola di Danza" <${process.env.SMTP_USER}>`,
+            from: `"BIGDANCESCHOOL" <${process.env.SMTP_USER}>`,
             to: email,
             subject: 'Pagamento Ricevuto - Ecco la tua Tessera Definitiva',
             html: `
             <div style="font-family: 'Helvetica Neue', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9fafb; padding: 0;">
                 
                 <!-- HEADER -->
-                <div style="background-color: #0f172a; padding: 40px 20px; text-align: center; border-radius: 12px 12px 0 0;">
-                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; letter-spacing: -0.5px;">Scuola di Danza</h1>
-                    <p style="color: #22c55e; font-size: 16px; margin-top: 8px; font-weight: bold;">Ricevuta di Pagamento & Tessera d'Ingresso</p>
+                <div style="background-color: #1e64c8; padding: 40px 20px; text-align: center; border-radius: 12px 12px 0 0; border-bottom: 4px solid #93c5fd;">
+                    <h1 style="color: #ffffff; margin: 0; font-size: 28px; letter-spacing: 1px;">BIGDANCESCHOOL</h1>
+                    <p style="color: #bfdbfe; font-size: 16px; margin-top: 8px; font-weight: bold;">Ricevuta di Pagamento & Tessera d'Ingresso</p>
                 </div>
 
                 <!-- BODY -->
@@ -52,26 +178,16 @@ export async function POST(req: Request) {
                         Questa email conferma che <b>il tuo pagamento è andato a buon fine</b>. Ti ringraziamo!
                         Di seguito trovi la tua Tessera per entrare ai corsi della nostra scuola, comodamente dal tuo smartphone.
                     </p>
+                    <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+                        In allegato a questa email troverai anche la tua <b>tessera in formato PDF</b>. Puoi salvarla o stamparla!
+                    </p>
 
                     <!-- QR CODE CARD -->
-                    <div style="background-color: #f8fafc; border: 2px solid #22c55e; border-radius: 16px; padding: 30px; text-align: center; margin: 35px 0;">
-                        <h3 style="color: #166534; font-size: 18px; margin-top: 0;">Tessera Definitiva - Mostrala per Entrare</h3>
+                    <div style="background-color: #f8fafc; border: 2px solid #3b82f6; border-radius: 16px; padding: 30px; text-align: center; margin: 35px 0;">
+                        <h3 style="color: #1d4ed8; font-size: 18px; margin-top: 0;">Tessera Definitiva - Mostrala per Entrare</h3>
                         <img src="cid:qrcode" alt="QR Code Tessera" style="width: 200px; height: 200px; display: block; margin: 15px auto; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-radius: 8px;" />
-                        <div style="font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: 2px;">
+                        <div style="font-size: 24px; font-weight: 800; color: #1e3a8a; letter-spacing: 2px;">
                             ${tessera_numero}
-                        </div>
-                        
-                        <!-- WALLET BUTTONS -->
-                        <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
-                            <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">Aggiungi la tessera al tuo wallet digitale (Disponibile a breve):</p>
-                            <div style="text-align: center;">
-                                <a href="#" style="display: inline-block; margin: 0 5px; text-decoration: none;">
-                                    <img src="https://upload.wikimedia.org/wikipedia/commons/archive/c/cb/20230222091218%21Google_Wallet_Add_to_button.svg" alt="Add to Google Wallet" style="height: 44px; width: auto; border-radius: 6px;" />
-                                </a>
-                                <a href="#" style="display: inline-block; margin: 0 5px; text-decoration: none;">
-                                    <img src="https://developer.apple.com/wallet/images/localized/en_US/Add_to_Apple_Wallet_Badge.svg" alt="Add to Apple Wallet" style="height: 44px; width: auto; border-radius: 6px;" />
-                                </a>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -80,7 +196,7 @@ export async function POST(req: Request) {
                 <div style="background-color: #f1f5f9; padding: 25px 20px; text-align: center; border-radius: 0 0 12px 12px; border: 1px solid #e2e8f0; border-top: none;">
                     <p style="color: #64748b; font-size: 13px; margin: 0;">
                         Questa è un'email automatica. Ti preghiamo di non rispondere a questo indirizzo.<br/>
-                        &copy; ${new Date().getFullYear()} Scuola di Danza. Tutti i diritti riservati.
+                        &copy; ${new Date().getFullYear()} BIGDANCESCHOOL. Tutti i diritti riservati.
                     </p>
                 </div>
             </div>
@@ -91,6 +207,12 @@ export async function POST(req: Request) {
                     content: base64Data,
                     encoding: 'base64',
                     cid: 'qrcode'
+                },
+                {
+                    filename: `Tessera_${nome.replace(/\s+/g, '_')}.pdf`,
+                    content: pdfBase64,
+                    encoding: 'base64',
+                    contentType: 'application/pdf'
                 }
             ]
         };

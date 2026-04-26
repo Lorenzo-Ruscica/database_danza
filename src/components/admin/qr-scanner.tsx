@@ -16,9 +16,10 @@ import { Button } from "@/components/ui/button"
 interface AdminQrScannerProps {
     open: boolean
     onOpenChange: (open: boolean) => void
+    mode?: "segreteria" | "presenze"
 }
 
-export function AdminQrScanner({ open, onOpenChange }: AdminQrScannerProps) {
+export function AdminQrScanner({ open, onOpenChange, mode = "presenze" }: AdminQrScannerProps) {
     const router = useRouter()
     const [error, setError] = useState<string | null>(null)
     const [manualId, setManualId] = useState("")
@@ -73,7 +74,10 @@ export function AdminQrScanner({ open, onOpenChange }: AdminQrScannerProps) {
                     if (idAllievo) {
                         scanner.clear()
                         onOpenChange(false)
-                        router.push(`/admin/scanner?id=${idAllievo}`)
+                        const url = mode === "segreteria" 
+                            ? `/admin/scanner?id=${idAllievo}&full=true` 
+                            : `/admin/scanner?id=${idAllievo}`
+                        router.push(url)
                     } else {
                         setError("QR Code non valido. Assicurati che sia una tessera della scuola.")
                     }
@@ -134,7 +138,10 @@ export function AdminQrScanner({ open, onOpenChange }: AdminQrScannerProps) {
                             onKeyDown={(e) => {
                                 if (e.key === 'Enter' && manualId.trim()) {
                                     onOpenChange(false);
-                                    router.push(`/admin/scanner?id=${manualId.trim()}`);
+                                    const url = mode === "segreteria" 
+                                        ? `/admin/scanner?id=${manualId.trim()}&full=true` 
+                                        : `/admin/scanner?id=${manualId.trim()}`
+                                    router.push(url);
                                 }
                             }}
                         />
@@ -142,7 +149,10 @@ export function AdminQrScanner({ open, onOpenChange }: AdminQrScannerProps) {
                             onClick={() => {
                                 if (manualId.trim()) {
                                     onOpenChange(false);
-                                    router.push(`/admin/scanner?id=${manualId.trim()}`);
+                                    const url = mode === "segreteria" 
+                                        ? `/admin/scanner?id=${manualId.trim()}&full=true` 
+                                        : `/admin/scanner?id=${manualId.trim()}`
+                                    router.push(url);
                                 }
                             }}
                         >

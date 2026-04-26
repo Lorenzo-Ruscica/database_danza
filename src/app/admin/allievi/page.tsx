@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { format } from "date-fns"
 import { it } from "date-fns/locale"
-import { Plus, Search, CheckCircle2, XCircle, AlertTriangle, Loader2 } from "lucide-react"
+import { Plus, Search, CheckCircle2, XCircle, AlertTriangle, Loader2, Trash2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 
 import { createClient } from "@/lib/supabase/client"
@@ -96,9 +96,28 @@ export default function AllieviPage() {
         fetchAllievi();
     }, []);
 
-    const filteredAllievi = allievi.filter(a =>
-        `${a.nome} ${a.cognome} ${a.tessera_numero} ${a.codice_fiscale}`.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredAllievi = allievi.filter(a => 
+        (a.nome?.toLowerCase() || '').includes(searchTerm.toLowerCase()) || 
+        (a.cognome?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (a.tessera_numero?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+        (a.codice_fiscale?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     )
+
+    const handleDeleteAllievo = async (id: string, nomeCompleto: string) => {
+        const confermato = window.confirm(`Sei sicuro di voler rimuovere permanentemente l'allievo ${nomeCompleto}? Tutte le sue presenze e i suoi dati andranno persi. Questa azione è irreversibile.`)
+        if (!confermato) return
+
+        try {
+            const { error } = await supabase.from('allievi').delete().eq('id', id)
+            if (error) throw error
+            
+            setAllievi(prev => prev.filter(a => a.id !== id))
+            alert("Allievo rimosso con successo.")
+        } catch (error: any) {
+            console.error("Errore durante l'eliminazione:", error)
+            alert("Errore durante l'eliminazione dell'allievo: " + error.message)
+        }
+    }
 
     const isCertificatoScaduto = (dataScadenza: string | null) => {
         if (!dataScadenza) return false;
@@ -117,7 +136,7 @@ export default function AllieviPage() {
         <div className="flex flex-col gap-6">
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold tracking-tight">Gestione Allievi</h1>
-                <Button>
+                <Button onClick={() => window.open('/', '_blank')}>
                     <Plus className="mr-2 h-4 w-4" /> Nuovo Allievo
                 </Button>
             </div>
@@ -162,7 +181,12 @@ export default function AllieviPage() {
                                             {allievo.cognome} {allievo.nome}
                                             <div className="text-xs text-muted-foreground">{allievo.codice_fiscale}</div>
                                         </TableCell>
-                                        <TableCell>{allievo.tessera_numero}</TableCell>
+                                        <TableCell>
+                                            {allievo.pagamento_iscrizione 
+                                                ? allievo.tessera_numero 
+                                                : <span className="text-muted-foreground text-xs italic">In attesa di pagamento</span>
+                                            }
+                                        </TableCell>
                                         <TableCell>
                                             <div className="text-sm">{allievo.telefono}</div>
                                             <div className="text-xs text-muted-foreground">{allievo.email}</div>
@@ -213,13 +237,24 @@ export default function AllieviPage() {
                                             )}
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button 
-                                                variant="outline" 
-                                                size="sm"
-                                                onClick={() => router.push(`/admin/scanner?id=${allievo.id}`)}
-                                            >
-                                                Apri Scheda
-                                            </Button>
+                                            <div className="flex justify-end gap-2">
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="sm"
+                                                    onClick={() => router.push(`/admin/scanner?id=${allievo.id}&full=true`)}
+                                                >
+                                                    Apri Scheda
+                                                </Button>
+                                                <Button 
+                                                    variant="destructive" 
+                                                    size="icon"
+                                                    className="h-8 w-8"
+                                                    title="Rimuovi Allievo"
+                                                    onClick={() => handleDeleteAllievo(allievo.id, `${allievo.nome} ${allievo.cognome}`)}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
                                         </TableCell>
                                     </TableRow>
                                 ))}
