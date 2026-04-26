@@ -12,7 +12,7 @@ export function MobileHeader() {
     const [scannerOpen, setScannerOpen] = useState(false)
 
     return (
-        <header className="md:hidden flex h-14 items-center justify-between border-b bg-background px-4 sticky top-0 z-30 w-full shadow-sm">
+        <header className="lg:hidden flex h-14 items-center justify-between border-b bg-background px-4 sticky top-0 z-30 w-full shadow-sm">
             <Link href="/admin" className="flex items-center gap-2 font-semibold">
                 <Image src="/logo_Bigdance.png" alt="BigDance Logo" width={110} height={35} className="object-contain dark:brightness-200" priority />
             </Link>
