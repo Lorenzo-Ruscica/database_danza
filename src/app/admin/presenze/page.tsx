@@ -183,6 +183,48 @@ export default function PresenzePage() {
             i.id === id ? { ...i, presente: !i.presente } : i
         ))
     }
+
+    const handleFastScan = async (idAllievo: string) => {
+        if (!isOggiGiorno) {
+            toast.error("Attenzione: La data selezionata non è oggi. Scansione bloccata.");
+            return;
+        }
+
+        const allievoIndex = iscritti.findIndex(i => i.id === idAllievo);
+        
+        if (allievoIndex === -1) {
+            // L'allievo non è in questa lista, forse non è iscritto a questo corso
+            toast.error("Scansione Rifiutata: Questo allievo non risulta iscritto al corso selezionato.", { duration: 4000 });
+            return;
+        }
+
+        const allievo = iscritti[allievoIndex];
+
+        if (allievo.presente) {
+            toast.info(`${allievo.nome} ${allievo.cognome} è già registrato come presente.`);
+            return;
+        }
+
+        // 1. Aggiorna stato locale immediatamente per feedback visivo
+        setIscritti(prev => prev.map(i => i.id === idAllievo ? { ...i, presente: true } : i));
+
+        // 2. Salva immediatamente sul DB
+        try {
+            const { error } = await supabase.from('presenze').insert({
+                corso_id: corsoSelezionato,
+                allievo_id: idAllievo,
+                data_presenza: dataSelezionata
+            });
+            if (error) throw error;
+            toast.success(`✅ Presenza registrata: ${allievo.nome} ${allievo.cognome}`);
+        } catch (err) {
+            console.error("Errore salvataggio presenza rapida:", err);
+            toast.error(`Errore nel salvare la presenza di ${allievo.nome}`);
+            // Rollback in caso di errore
+            setIscritti(prev => prev.map(i => i.id === idAllievo ? { ...i, presente: false } : i));
+        }
+    }
+
     const handleSaveRegistro = async () => {
         if (!isOggiGiorno) return;
         
@@ -310,13 +352,13 @@ export default function PresenzePage() {
     }
 
     return (
-        <div className="flex flex-col h-[calc(100vh-8rem)] gap-4 relative">
+        <div className="flex flex-col flex-1 h-full min-h-[calc(100vh-6rem)] gap-4 relative">
             {/* Modalità Stampa Registro Invisibile*/}
             {isPrinting && currentContextCourse && viewMode === 'daily' && (
                 <StampaListaCorsi corsoNome={currentContextCourse.nome} iscritti={iscritti} dataCorrente={dataSelezionata} />
             )}
             
-            <AdminQrScanner open={scannerOpen} onOpenChange={setScannerOpen} mode="presenze" />
+            <AdminQrScanner open={scannerOpen} onOpenChange={setScannerOpen} mode="presenze" onScanSuccess={handleFastScan} />
 
             {/* Header */}
             <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-muted/30 p-4 rounded-xl border">
@@ -358,7 +400,7 @@ export default function PresenzePage() {
                         title="Scannerizza Tessera Allievo"
                     >
                         <QrCode className="w-5 h-5 md:mr-2" />
-                        <span className="hidden md:inline">Scansiona Tessera</span>
+                        <span className="hidden md:inline">Scanner Rapido Multiplo</span>
                     </Button>
 
                     {viewMode === 'daily' ? (

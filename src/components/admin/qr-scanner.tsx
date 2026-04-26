@@ -17,14 +17,16 @@ interface AdminQrScannerProps {
     open: boolean
     onOpenChange: (open: boolean) => void
     mode?: "segreteria" | "presenze"
+    onScanSuccess?: (id: string) => void
 }
 
-export function AdminQrScanner({ open, onOpenChange, mode = "presenze" }: AdminQrScannerProps) {
+export function AdminQrScanner({ open, onOpenChange, mode = "presenze", onScanSuccess }: AdminQrScannerProps) {
     const router = useRouter()
     const [error, setError] = useState<string | null>(null)
     const [manualId, setManualId] = useState("")
 
     const scannerRef = useRef<Html5QrcodeScanner | null>(null)
+    const lastScannedRef = useRef<{ id: string, time: number } | null>(null)
 
     useEffect(() => {
         if (!open) {
@@ -35,7 +37,7 @@ export function AdminQrScanner({ open, onOpenChange, mode = "presenze" }: AdminQ
             return
         }
 
-        // Delay to ensure the DOM element exists inside the Dialog
+        // Delay to ensure the DOM element exists and Dialog animation is complete
         const timer = setTimeout(() => {
             if (!document.getElementById("reader")) return;
 
@@ -46,7 +48,7 @@ export function AdminQrScanner({ open, onOpenChange, mode = "presenze" }: AdminQ
                     qrbox: { width: 250, height: 250 },
                     supportedScanTypes: [Html5QrcodeScanType.SCAN_TYPE_CAMERA],
                     videoConstraints: {
-                        facingMode: "environment",
+                        facingMode: { ideal: "environment" },
                     }
                 },
                 false
@@ -72,12 +74,25 @@ export function AdminQrScanner({ open, onOpenChange, mode = "presenze" }: AdminQ
                     }
 
                     if (idAllievo) {
-                        scanner.clear()
-                        onOpenChange(false)
-                        const url = mode === "segreteria" 
-                            ? `/admin/scanner?id=${idAllievo}&full=true` 
-                            : `/admin/scanner?id=${idAllievo}`
-                        router.push(url)
+                        // Evita scansioni multiple dello stesso ID in meno di 3 secondi
+                        const now = Date.now();
+                        if (lastScannedRef.current && lastScannedRef.current.id === idAllievo && (now - lastScannedRef.current.time) < 3000) {
+                            return; // Ignora se scannerizzato di recente
+                        }
+                        lastScannedRef.current = { id: idAllievo, time: now };
+
+                        if (onScanSuccess) {
+                            // Modalità Scanner Continuo (es. Presenze Rapide)
+                            onScanSuccess(idAllievo);
+                        } else {
+                            // Modalità Classica (Singola apertura)
+                            scanner.clear()
+                            onOpenChange(false)
+                            const url = mode === "segreteria" 
+                                ? `/admin/scanner?id=${idAllievo}&full=true` 
+                                : `/admin/scanner?id=${idAllievo}`
+                            router.push(url)
+                        }
                     } else {
                         setError("QR Code non valido. Assicurati che sia una tessera della scuola.")
                     }
@@ -86,7 +101,7 @@ export function AdminQrScanner({ open, onOpenChange, mode = "presenze" }: AdminQ
                     // Silently fail most frames
                 }
             )
-        }, 100)
+        }, 500) // Aumentato il delay per dare tempo all'animazione della modale di finire su iOS
 
         // Cleanup on unmount
         return () => {
@@ -112,7 +127,13 @@ export function AdminQrScanner({ open, onOpenChange, mode = "presenze" }: AdminQ
                 </DialogHeader>
 
                 <div className="flex flex-col items-center justify-center min-h-[300px] border rounded-lg bg-muted/50 overflow-hidden relative">
-
+                    <style dangerouslySetInnerHTML={{__html: `
+                        #reader video {
+                            object-fit: cover !important;
+                            width: 100% !important;
+                            min-height: 250px !important;
+                        }
+                    `}} />
                     <div id="reader" className="w-full" />
 
                     {/* Custom Error Overlay if invalid QR is scanned */}
