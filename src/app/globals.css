@@ -156,11 +156,11 @@
 :root {
   --radius: 0.75rem;
 
-  /* Sfondi Principali (Light & Base) */
-  --background: #f7fdff; /* Azzurro Neve */
+  /* Sfondi Principali (Light & Base) - Meno accecanti, più riposanti */
+  --background: #ebf4f8; /* Azzurro Neve Soft / Muted Ice */
   --foreground: #0d4d66; /* Blu Abisso / Teal Navy */
 
-  --card: rgba(239, 250, 255, 0.9); /* Azzurro Ghiaccio */
+  --card: rgba(224, 242, 250, 0.9); /* Azzurro Ghiaccio Soft */
   --card-foreground: #0d4d66;
 
   --popover: #effaff;
@@ -263,12 +263,12 @@
   --sidebar-ring: #5bbfe0;
 }
 
-/* Glassmorphism utilities */
+/* Glassmorphism utilities - Meno bianchi e più azzurrati */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.45);
+  background: rgba(224, 242, 250, 0.5);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(168, 225, 245, 0.4);
   box-shadow: 0 8px 32px 0 rgba(13, 77, 102, 0.06);
 }
 
@@ -281,10 +281,10 @@
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(224, 242, 250, 0.6);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(214, 242, 252, 0.5);
+  border: 1px solid rgba(168, 225, 245, 0.5);
   box-shadow: 0 4px 20px 0 rgba(13, 77, 102, 0.04);
 }
 
