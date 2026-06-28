@@ -45,14 +45,14 @@ export default function Step4Corsi() {
                         <Card
                             key={corso.id}
                             className={`cursor-pointer transition-all active:scale-95 border-2 ${isSelected
-                                ? 'bg-primary/5 border-primary shadow-md'
-                                : 'bg-card border-border hover:border-primary/50'
+                                ? 'bg-[#f0c040]/5 border-[#f0c040] shadow-md active-gold-border'
+                                : 'bg-card border-border hover:border-[#1a8fb5]/50'
                                 }`}
                             onClick={() => toggleCorso(corso.id, corso.prezzo_standard)}
                         >
                             <CardContent className="flex items-center justify-between p-6">
                                 <div className="space-y-1">
-                                    <h3 className={`font-semibold text-xl ${isSelected ? 'text-primary' : ''}`}>
+                                    <h3 className={`font-semibold text-xl ${isSelected ? 'text-primary font-bold' : ''}`}>
                                         {corso.nome}
                                     </h3>
                                     {corso.prezzo_standard === 0 ? (
@@ -67,9 +67,9 @@ export default function Step4Corsi() {
                                     )}
                                 </div>
 
-                                <div className={`h-10 w-10 rounded-full border-2 flex items-center justify-center shrink-0 ml-4 ${isSelected ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/30'
+                                <div className={`h-10 w-10 rounded-full border-2 flex items-center justify-center shrink-0 ml-4 ${isSelected ? 'bg-[#f0c040] border-[#f0c040] text-[#082e3d]' : 'border-muted-foreground/30'
                                     }`}>
-                                    {isSelected && <Check className="h-6 w-6" />}
+                                    {isSelected && <Check className="h-6 w-6 stroke-[3px]" />}
                                 </div>
                             </CardContent>
                         </Card>

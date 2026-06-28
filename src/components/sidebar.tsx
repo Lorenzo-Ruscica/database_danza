@@ -45,20 +45,20 @@ export function Sidebar() {
     const [scannerOpen, setScannerOpen] = useState(false)
 
     return (
-        <div className="flex flex-col h-full border-r bg-muted/40 pb-4">
-            <div className="flex h-14 items-center justify-between border-b px-4 lg:h-[60px] lg:px-6">
+        <div className="flex flex-col h-full border-r border-sidebar-border bg-sidebar pb-4 text-sidebar-foreground">
+            <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4 lg:h-[60px] lg:px-6">
                 <Link href="/admin" className="flex items-center gap-2 font-semibold">
-                    <Image src="/logo_Bigdance.png" alt="BigDance Logo" width={120} height={40} className="object-contain dark:brightness-200" priority />
+                    <Image src="/logo_Bigdance.png" alt="BigDance Logo" width={120} height={40} className="object-contain brightness-0 invert" priority />
                 </Link>
 
                 <Button
                     variant="outline"
                     size="icon"
-                    className="rounded-full h-8 w-8 ml-auto"
+                    className="rounded-full h-8 w-8 ml-auto border-sidebar-border hover:bg-sidebar-accent hover:text-sidebar-foreground"
                     onClick={() => setScannerOpen(true)}
                     title="Scannerizza Tessera Allievo"
                 >
-                    <QrCode className="h-4 w-4 text-primary" />
+                    <QrCode className="h-4 w-4 text-sidebar-primary" />
                 </Button>
             </div>
 
@@ -71,8 +71,8 @@ export function Sidebar() {
                             key={route.href}
                             href={route.href}
                             className={cn(
-                                "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
-                                pathname === route.href ? "bg-muted text-primary" : ""
+                                "flex items-center gap-3 rounded-lg px-3 py-2 text-sidebar-foreground/70 transition-all hover:text-sidebar-foreground hover:bg-sidebar-accent",
+                                pathname === route.href ? "bg-sidebar-accent text-sidebar-primary font-bold active-gold-border border-l-2 rounded-l-none" : ""
                             )}
                         >
                             <route.icon className="h-4 w-4" />

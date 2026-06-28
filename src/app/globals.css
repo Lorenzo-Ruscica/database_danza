@@ -113,7 +113,7 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   --font-playfair: var(--font-playfair), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -155,49 +155,56 @@
 
 :root {
   --radius: 0.75rem;
-  /* Light Blue Ocean Theme */
-  --background: oklch(0.98 0.02 250);
-  --foreground: oklch(0.25 0.05 250);
-  --card: oklch(1 0.01 250 / 0.9);
-  --card-foreground: oklch(0.25 0.05 250);
-  --popover: oklch(1 0.01 250);
-  --popover-foreground: oklch(0.25 0.05 250);
 
-  /* Primary: Elegant Blue */
-  --primary: oklch(0.55 0.15 250);
-  --primary-foreground: oklch(0.98 0.02 250);
+  /* Sfondi Principali (Light & Base) */
+  --background: #f7fdff; /* Azzurro Neve */
+  --foreground: #0d4d66; /* Blu Abisso / Teal Navy */
 
-  --secondary: oklch(0.94 0.05 250);
-  --secondary-foreground: oklch(0.3 0.1 250);
-  
-  --muted: oklch(0.94 0.03 250);
-  --muted-foreground: oklch(0.55 0.06 250);
+  --card: rgba(239, 250, 255, 0.9); /* Azzurro Ghiaccio */
+  --card-foreground: #0d4d66;
 
-  --accent: oklch(0.9 0.05 250);
-  --accent-foreground: oklch(0.3 0.1 250);
+  --popover: #effaff;
+  --popover-foreground: #0d4d66;
+
+  /* Primary: Deep Sea Blue */
+  --primary: #1a8fb5; 
+  --primary-foreground: #f7fdff;
+
+  /* Secondary: Azzurro Cielo Soft */
+  --secondary: #d6f2fc;
+  --secondary-foreground: #0d4d66;
+
+  --muted: #effaff;
+  --muted-foreground: #1a8fb5;
+
+  /* Accent: Ocean Cyan */
+  --accent: #5bbfe0;
+  --accent-foreground: #082e3d;
 
   --destructive: oklch(0.6 0.15 20);
   --destructive-foreground: oklch(0.98 0.02 250);
 
-  --border: oklch(0.85 0.04 250);
-  --input: oklch(0.85 0.04 250);
-  --ring: oklch(0.55 0.15 250 / 0.6);
+  /* Borders: Azzurro Cielo Soft */
+  --border: #d6f2fc;
+  --input: #d6f2fc;
+  --ring: #5bbfe0;
 
-  --chart-1: oklch(0.55 0.15 250);
-  --chart-2: oklch(0.7 0.1 230);
-  --chart-3: oklch(0.8 0.08 210);
-  --chart-4: oklch(0.4 0.1 270);
-  --chart-5: oklch(0.6 0.1 290);
+  /* Charts & Decorations */
+  --chart-1: #f0c040; /* Gold */
+  --chart-2: #1a8fb5; /* Deep Sea Blue */
+  --chart-3: #a8e1f5; /* Azzurro Cristallo */
+  --chart-4: #5bbfe0; /* Ocean Cyan */
+  --chart-5: #0d4d66; /* Blu Abisso */
 
-  /* Admin Sidebar follows Ocean theme */
-  --sidebar: oklch(0.98 0.02 250);
-  --sidebar-foreground: oklch(0.25 0.05 250);
-  --sidebar-primary: oklch(0.55 0.15 250);
-  --sidebar-primary-foreground: oklch(0.98 0.02 250);
-  --sidebar-accent: oklch(0.92 0.03 250);
-  --sidebar-accent-foreground: oklch(0.25 0.05 250);
-  --sidebar-border: oklch(0.85 0.04 250);
-  --sidebar-ring: oklch(0.55 0.15 250 / 0.5);
+  /* Admin Sidebar: Midnight Navy */
+  --sidebar: #082e3d;
+  --sidebar-foreground: #f7fdff;
+  --sidebar-primary: #5bbfe0;
+  --sidebar-primary-foreground: #082e3d;
+  --sidebar-accent: #0d4d66;
+  --sidebar-accent-foreground: #f7fdff;
+  --sidebar-border: #0d4d66;
+  --sidebar-ring: #5bbfe0;
 }
 
 @layer base {
@@ -208,33 +215,94 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  h1, h2, h3, .font-playfair {
+    font-family: var(--font-playfair), serif;
+  }
 }
 
 .dark {
-  /* Deep Blue Dark Mode */
-  --background: oklch(0.15 0.03 250);
-  --foreground: oklch(0.95 0.02 250);
-  --card: oklch(0.2 0.04 250 / 0.85);
-  --card-foreground: oklch(0.95 0.02 250);
-  --popover: oklch(0.18 0.04 250);
-  --popover-foreground: oklch(0.95 0.02 250);
+  /* Deep Blue / Midnight Navy Dark Mode */
+  --background: #082e3d; /* Midnight Navy */
+  --foreground: #f7fdff; /* Azzurro Neve */
 
-  --primary: oklch(0.75 0.15 250);
-  --primary-foreground: oklch(0.15 0.03 250);
+  --card: rgba(13, 77, 102, 0.85); /* Blu Abisso / Teal Navy */
+  --card-foreground: #f7fdff;
 
-  --secondary: oklch(0.25 0.05 250);
-  --secondary-foreground: oklch(0.95 0.02 250);
-  
-  --muted: oklch(0.25 0.05 250);
-  --muted-foreground: oklch(0.7 0.04 250);
+  --popover: #0d4d66;
+  --popover-foreground: #f7fdff;
 
-  --accent: oklch(0.3 0.06 250);
-  --accent-foreground: oklch(0.95 0.02 250);
+  /* Primary: Ocean Cyan in dark mode */
+  --primary: #5bbfe0; 
+  --primary-foreground: #082e3d;
+
+  --secondary: #0d4d66;
+  --secondary-foreground: #f7fdff;
+
+  --muted: #0d4d66;
+  --muted-foreground: #a8e1f5;
+
+  --accent: #1a8fb5;
+  --accent-foreground: #f7fdff;
 
   --destructive: oklch(0.4 0.15 20);
   --destructive-foreground: oklch(0.95 0.02 250);
 
-  --border: oklch(0.3 0.05 250);
-  --input: oklch(0.3 0.05 250);
-  --ring: oklch(0.75 0.15 250 / 0.5);
+  --border: #0d4d66;
+  --input: #0d4d66;
+  --ring: #5bbfe0;
+
+  /* Admin Sidebar: Darker Midnight */
+  --sidebar: #051e28;
+  --sidebar-foreground: #f7fdff;
+  --sidebar-primary: #5bbfe0;
+  --sidebar-primary-foreground: #051e28;
+  --sidebar-accent: #082e3d;
+  --sidebar-accent-foreground: #f7fdff;
+  --sidebar-border: #082e3d;
+  --sidebar-ring: #5bbfe0;
+}
+
+/* Glassmorphism utilities */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 8px 32px 0 rgba(13, 77, 102, 0.06);
+}
+
+.dark .glass-panel {
+  background: rgba(8, 46, 61, 0.45);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(214, 242, 252, 0.5);
+  box-shadow: 0 4px 20px 0 rgba(13, 77, 102, 0.04);
+}
+
+.dark .glass-card {
+  background: rgba(13, 77, 102, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.15);
+}
+
+/* Gold active state badge/border */
+.active-gold-border {
+  border-color: #f0c040 !important;
+  box-shadow: 0 0 12px rgba(240, 192, 64, 0.2) !important;
+}
+
+.active-gold-bg {
+  background-color: #f0c040 !important;
+  color: #082e3d !important;
 }

@@ -75,12 +75,12 @@ export default function KioskPage() {
     <div className={`min-h-screen flex flex-col font-sans selection:bg-primary/20 relative overflow-hidden transition-colors duration-500 bg-background text-foreground ${isDark ? "dark" : ""}`}>
 
       {/* Elegant Dynamic Minimalist Background */}
-      <div className={`absolute inset-0 transition-opacity duration-1000 -z-10 animate-gradient-slow ${isDark ? 'bg-gradient-to-br from-slate-950 via-blue-950/60 to-slate-950' : 'bg-gradient-to-br from-blue-50/80 via-indigo-50/50 to-sky-100/60'}`} />
+      <div className={`absolute inset-0 transition-opacity duration-1000 -z-10 animate-gradient-slow ${isDark ? 'bg-gradient-to-br from-[#082e3d] via-[#0d4d66] to-[#051e28]' : 'bg-gradient-to-br from-[#f7fdff] via-[#effaff] to-[#d6f2fc]'}`} />
 
       {/* Floating Soft Ambient Lights */}
-      <div className={`absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] blur-[120px] rounded-[100%] pointer-events-none animate-float-1 mix-blend-screen opacity-60 ${isDark ? "bg-blue-500/[0.06]" : "bg-blue-600/[0.05]"}`} />
-      <div className={`absolute bottom-[-10%] right-[-10%] w-[55vw] h-[55vw] blur-[140px] rounded-[100%] pointer-events-none animate-float-2 mix-blend-screen opacity-60 ${isDark ? "bg-indigo-500/[0.05]" : "bg-sky-500/[0.06]"}`} />
-      <div className={`absolute top-[30%] left-[60%] w-[35vw] h-[35vw] blur-[100px] rounded-full pointer-events-none animate-float-1 opacity-50 ${isDark ? "bg-blue-800/[0.2]" : "bg-indigo-300/[0.2]"}`} style={{ animationDelay: '-8s', animationDuration: '25s' }} />
+      <div className={`absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] blur-[120px] rounded-[100%] pointer-events-none animate-float-1 mix-blend-screen opacity-60 ${isDark ? "bg-[#5bbfe0]/[0.08]" : "bg-[#1a8fb5]/[0.05]"}`} />
+      <div className={`absolute bottom-[-10%] right-[-10%] w-[55vw] h-[55vw] blur-[140px] rounded-[100%] pointer-events-none animate-float-2 mix-blend-screen opacity-60 ${isDark ? "bg-[#1a8fb5]/[0.05]" : "bg-[#5bbfe0]/[0.06]"}`} />
+      <div className={`absolute top-[30%] left-[60%] w-[35vw] h-[35vw] blur-[100px] rounded-full pointer-events-none animate-float-1 opacity-50 ${isDark ? "bg-[#0d4d66]/[0.2]" : "bg-[#a8e1f5]/[0.2]"}`} style={{ animationDelay: '-8s', animationDuration: '25s' }} />
 
       {/* Global Kiosk Interactions */}
       <InactivityTimer onTimeout={handleReset} isActive={step > 1 || anagrafica.nome !== '' || anagrafica.cognome !== ''} />
@@ -123,10 +123,10 @@ export default function KioskPage() {
               <div
                 key={idx}
                 className={`w-16 h-1.5 rounded-full transition-all duration-700 ease-in-out ${idx === step
-                  ? (isDark ? 'bg-white scale-y-150 shadow-[0_4px_10px_rgba(255,255,255,0.2)]' : 'bg-black scale-y-150 shadow-[0_4px_10px_rgba(0,0,0,0.1)]')
+                  ? 'bg-primary scale-y-150 shadow-[0_4px_10px_rgba(26,143,181,0.3)]'
                   : idx < step
-                    ? (isDark ? 'bg-white/40' : 'bg-black/40')
-                    : (isDark ? 'bg-white/10' : 'bg-black/10')
+                    ? 'bg-primary/50'
+                    : 'bg-muted-foreground/20'
                   }`}
               />
             ))}
@@ -136,9 +136,9 @@ export default function KioskPage() {
 
       {/* Main Content Area (ottimizzato Touch) */}
       <main className="flex-1 overflow-auto p-4 md:p-8 flex justify-center items-start pb-24 relative z-10 animate-fade-in-up-soft" style={{ animationDelay: '0.3s' }}>
-        <div className={`w-full max-w-5xl backdrop-blur-3xl rounded-[2.5rem] p-8 md:p-12 border relative overflow-hidden transition-all duration-1000 transform hover:scale-[1.005] ${isDark ? "bg-white/5 border-white/10 text-white shadow-[0_20px_60px_-15px_rgba(255,255,255,0.05)]" : "bg-white/80 border-black/10 text-black shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)]"}`}>
+        <div className="w-full max-w-5xl rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden transition-all duration-1000 transform hover:scale-[1.005] glass-panel">
           {/* Subtle inner reflection */}
-          <div className={`absolute inset-x-0 top-0 h-px w-full bg-gradient-to-r from-transparent to-transparent ${isDark ? "via-white/20" : "via-black/20"}`} />
+          <div className="absolute inset-x-0 top-0 h-px w-full bg-gradient-to-r from-transparent via-white/30 to-transparent" />
 
           <div className="relative z-10 transition-transform duration-500 ease-out" key={`step-${step}`}>
             <div className="animate-fade-in-up-soft" style={{ animationDuration: '0.6s' }}>
