@@ -38,10 +38,12 @@ export interface KioskState {
     }
     updateContatti: (data: Partial<KioskState['contatti']>) => void
 
-    // Step 4: Corsi Scelti
+    // Step 4: Corsi Scelti e Condizioni
     corsi: string[] // Array of course IDs
     totalePrezzo: number
     toggleCorso: (corsoId: string, prezzo: number) => void
+    accettoCondizioni: boolean
+    setAccettoCondizioni: (val: boolean) => void
 
     // Step 5: Firma Digitale
     firmaUrl: string | null
@@ -81,6 +83,7 @@ const initialState = {
     },
     corsi: [],
     totalePrezzo: 0,
+    accettoCondizioni: false,
     firmaUrl: null,
     certificatoBlob: null
 }
@@ -118,6 +121,8 @@ export const useKioskStore = create<KioskState>((set) => ({
             }
         }
     }),
+
+    setAccettoCondizioni: (val) => set({ accettoCondizioni: val }),
 
     setFirmaUrl: (url) => set({ firmaUrl: url }),
     setCertificatoBlob: (blob) => set({ certificatoBlob: blob }),

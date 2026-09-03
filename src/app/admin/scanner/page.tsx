@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { CheckCircle2, AlertCircle, Euro, User, Loader2, Download, Upload, Edit } from "lucide-react"
+import { CheckCircle2, AlertCircle, Euro, User, Loader2, Download, Upload, Edit, Check, Plus } from "lucide-react"
 
 // FORZA IL RENDERING DINAMICO: Risolve l'errore "Command npm run build exited with 1" su Vercel
 export const dynamic = 'force-dynamic';
@@ -236,8 +236,19 @@ function ScannerContent() {
     const handleRegistraPagamento = async () => {
         if (!allievo) return
 
+        if (!hasCertificato) {
+            alert("Attenzione: È obbligatorio caricare e registrare il Certificato Medico prima di poter confermare il pagamento.");
+            return;
+        }
+
+        if (noCorsiAtAll) {
+            alert("Attenzione: È obbligatorio selezionare e assegnare almeno un corso all'allievo prima di poter procedere con il pagamento.");
+            openEditCorsi();
+            return;
+        }
+
         // Pop-up di conferma pagamento
-        const isConfirmed = window.confirm(`Confermi la ricezione del pagamento per ${allievo.nome} ${allievo.cognome}?`);
+        const isConfirmed = window.confirm(`Confermi la ricezione del pagamento di € ${totaleDaPagare.toFixed(2)} per ${allievo.nome} ${allievo.cognome}?`);
         if (!isConfirmed) return;
 
         try {
@@ -505,7 +516,22 @@ function ScannerContent() {
                                 );
                             })}
                             {(!allievo.iscrizioni_corsi || allievo.iscrizioni_corsi.length === 0) && (
-                                <li className="text-muted-foreground bg-zinc-50 border p-3 rounded-lg text-sm text-center">Nessun corso attivo trovato</li>
+                                <div className="bg-amber-500/10 border-2 border-dashed border-amber-500/40 rounded-xl p-5 text-center space-y-3">
+                                    <div className="flex items-center justify-center gap-2 text-amber-700 dark:text-amber-400 font-bold text-base">
+                                        <AlertCircle className="w-5 h-5 shrink-0" />
+                                        <span>Nessun corso ancora assegnato</span>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                                        L'allievo ha completato la pre-iscrizione al totem. Per confermare il pagamento, assegna i corsi a cui parteciperà.
+                                    </p>
+                                    <Button 
+                                        onClick={openEditCorsi}
+                                        className="bg-primary text-primary-foreground font-semibold shadow-sm hover:bg-primary/90"
+                                        size="sm"
+                                    >
+                                        <Plus className="w-4 h-4 mr-1.5" /> Assegna Corsi Ora
+                                    </Button>
+                                </div>
                             )}
                         </ul>
                     </div>
@@ -532,17 +558,60 @@ function ScannerContent() {
 
                         <Button
                             className={`w-full h-16 text-lg md:text-xl font-bold shadow-lg transition-transform ${(!pagamentoFatto && hasCertificato && !noCorsiAtAll) ? 'active:scale-95' : ''}`}
-                            onClick={handleRegistraPagamento}
-                            disabled={pagamentoFatto || noCorsiAtAll || !hasCertificato}
-                            variant={pagamentoFatto ? "secondary" : "default"}
+                            onClick={noCorsiAtAll && hasCertificato && !pagamentoFatto ? openEditCorsi : handleRegistraPagamento}
+                            disabled={pagamentoFatto || (!hasCertificato && noCorsiAtAll) || (!hasCertificato)}
+                            variant={pagamentoFatto ? "secondary" : (hasCertificato && !noCorsiAtAll ? "default" : "outline")}
                         >
                             <CheckCircle2 className="mr-2 h-6 w-6 md:h-7 md:w-7" />
                             {pagamentoFatto
                                 ? "Pagato per questo mese"
-                                : !hasCertificato
-                                    ? "Richiede Certificato Medico"
-                                    : "Conferma Ricezione Soldi"}
+                                : !hasCertificato && noCorsiAtAll
+                                    ? "Richiede Certificato e Corsi"
+                                    : !hasCertificato
+                                        ? "Richiede Certificato Medico"
+                                        : noCorsiAtAll
+                                            ? "Seleziona Corsi per Pagare"
+                                            : "Conferma Ricezione Soldi"}
                         </Button>
+
+                        {!pagamentoFatto && (
+                            <div className="mt-4 space-y-2 text-xs md:text-sm bg-background/60 p-3.5 rounded-xl border border-primary/20">
+                                <p className="font-semibold text-foreground">Requisiti per confermare il pagamento:</p>
+                                <div className="flex items-center justify-between">
+                                    <span className="flex items-center gap-2">
+                                        {hasCertificato ? (
+                                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                        ) : (
+                                            <AlertCircle className="w-4 h-4 text-amber-500" />
+                                        )}
+                                        <span className={hasCertificato ? "text-green-700 dark:text-green-400 font-medium" : "text-amber-700 dark:text-amber-400 font-semibold"}>
+                                            1. Certificato Medico
+                                        </span>
+                                    </span>
+                                    <span className="text-xs">
+                                        {hasCertificato ? "Presente ✓" : "(Mancante - Carica sotto)"}
+                                    </span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="flex items-center gap-2">
+                                        {!noCorsiAtAll ? (
+                                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                                        ) : (
+                                            <AlertCircle className="w-4 h-4 text-amber-500" />
+                                        )}
+                                        <span className={!noCorsiAtAll ? "text-green-700 dark:text-green-400 font-medium" : "text-amber-700 dark:text-amber-400 font-semibold"}>
+                                            2. Assegnazione Corsi
+                                        </span>
+                                    </span>
+                                    <span className="text-xs">
+                                        {!noCorsiAtAll 
+                                            ? `${allievo.iscrizioni_corsi.length} assegnati ✓` 
+                                            : <button type="button" onClick={openEditCorsi} className="text-primary font-bold underline hover:opacity-80">Assegna ora</button>
+                                        }
+                                    </span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>
@@ -770,9 +839,14 @@ function ScannerContent() {
                                             setSelectedCorsiCustom([...selectedCorsiCustom, { corso_id: corso.id, prezzo_personalizzato: null }]);
                                         }
                                     }}>
-                                        <span className={`font-semibold ${isChecked ? 'text-primary' : 'text-foreground'}`}>
-                                            {corso.nome}
-                                        </span>
+                                        <div className="flex items-center gap-3">
+                                            <div className={`h-5 w-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all ${isChecked ? 'bg-primary border-primary text-primary-foreground' : 'border-muted-foreground/40 bg-background'}`}>
+                                                {isChecked && <Check className="h-3.5 w-3.5 stroke-[3px]" />}
+                                            </div>
+                                            <span className={`font-semibold ${isChecked ? 'text-primary' : 'text-foreground'}`}>
+                                                {corso.nome}
+                                            </span>
+                                        </div>
                                         <span className="text-sm font-medium text-muted-foreground">
                                             {isSegreteria && !selectedIscr?.prezzo_personalizzato ? "In Segreteria" : `€ ${corso.prezzo_standard.toFixed(2)}`}
                                         </span>

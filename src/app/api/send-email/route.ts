@@ -80,9 +80,9 @@ export async function POST(req: Request) {
                             <td style="padding: 10px 0; color: #64748b;"><strong>Telefono:</strong></td>
                             <td style="padding: 10px 0; color: #0f172a; font-weight: 500;">${contatti?.telefono || 'N/A'}</td>
                         </tr>
-                        <tr style="border-top: 1px solid #f1f5f9; background-color: #f0fdf4;">
-                            <td style="padding: 12px 10px; color: #166534; border-radius: 8px 0 0 8px;"><strong>Importo Mensile Corsi:</strong></td>
-                            <td style="padding: 12px 10px; color: #15803d; font-weight: 700; font-size: 18px; border-radius: 0 8px 8px 0;">€ ${totale_prezzo ? totale_prezzo.toFixed(2) : '0.00'}</td>
+                        <tr style="border-top: 1px solid #f1f5f9; background-color: #effaff;">
+                            <td style="padding: 12px 10px; color: #0d4d66; border-radius: 8px 0 0 8px;"><strong>Corsi & Quota Mensile:</strong></td>
+                            <td style="padding: 12px 10px; color: #1a8fb5; font-weight: 700; font-size: 16px; border-radius: 0 8px 8px 0;">${totale_prezzo && totale_prezzo > 0 ? `€ ${totale_prezzo.toFixed(2)}` : 'Da selezionare in Segreteria'}</td>
                         </tr>
                     </table>
                 </div>

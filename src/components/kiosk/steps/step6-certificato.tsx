@@ -142,13 +142,13 @@ export default function Step6Certificato({ onComplete }: { onComplete?: (data: {
                         <FileWarning className="w-12 h-12" />
                     </div>
                     <div>
-                        <p className="text-2xl font-bold mb-3 text-foreground">Certificato Medico Richiesto</p>
+                        <p className="text-2xl font-bold mb-3 text-foreground">Certificato Medico & Scelta Corsi</p>
                         <p className="text-lg text-muted-foreground leading-relaxed">
-                            Ricorda che per procedere col pagamento e validare l'iscrizione ai corsi, 
-                            <span className="font-semibold text-foreground"> dovrai presentare il tuo Certificato Medico in segreteria.</span>
+                            Ricorda che per completare l'iscrizione e procedere al pagamento, 
+                            <span className="font-semibold text-foreground"> dovrai presentare il Certificato Medico e selezionare i tuoi corsi in segreteria.</span>
                             <br/><br/>
                             Sarà l'amministrazione, tramite scansione del tuo QR Code, 
-                            a caricarlo nel nostro gestionale.
+                            ad assegnare i corsi scelti, caricare il certificato e finalizzare il tesseramento.
                         </p>
                     </div>
                 </div>
