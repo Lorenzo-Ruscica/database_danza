@@ -42,6 +42,10 @@ function ScannerContent() {
     const [showFullCard, setShowFullCard] = useState(isFull)
     const [presenzaRegistrata, setPresenzaRegistrata] = useState(false)
 
+    // Totale Mensile Manuale / Personalizzato
+    const [totaleManuale, setTotaleManuale] = useState<string>("")
+    const [isManualTotalOverridden, setIsManualTotalOverridden] = useState(false)
+
     useEffect(() => {
         const fetchStudente = async () => {
             if (!id) {
@@ -65,6 +69,7 @@ function ScannerContent() {
                         indirizzo_residenza,
                         cap_residenza,
                         provincia_residenza,
+                        regione_residenza,
                         email,
                         telefono,
                         is_minore,
@@ -105,12 +110,38 @@ function ScannerContent() {
 
                     const { data: checkPagamento } = await supabase
                         .from('pagamenti')
-                        .select('id')
+                        .select('id, importo')
                         .eq('allievo_id', data.id)
                         .eq('mese_riferimento', meseT)
 
                     if (checkPagamento && checkPagamento.length > 0) {
                         setPagamentoFatto(true)
+                    }
+
+                    // Calcolo somma standard dai corsi
+                    const calculatedCoursesSum = data.iscrizioni_corsi?.reduce((acc: number, iscr: any) => {
+                        const isCustomPrice = iscr.prezzo_personalizzato !== null && iscr.prezzo_personalizzato !== undefined;
+                        const price = isCustomPrice ? Number(iscr.prezzo_personalizzato) : (iscr.corsi?.prezzo_standard || 0);
+                        return acc + price;
+                    }, 0) || 0;
+
+                    // Inizializza Totale Mensile:
+                    // 1. Se ha pagato questo mese -> importo pagato
+                    // 2. Se ha una quota manuale impostata (regione_residenza) -> mantienila (così non cambia quando si mettono i corsi)
+                    // 3. Se ci sono corsi -> somma corsi
+                    // 4. Altrimenti vuoto
+                    if (checkPagamento && checkPagamento.length > 0 && checkPagamento[0].importo !== null) {
+                        setTotaleManuale(Number(checkPagamento[0].importo).toFixed(2));
+                        setIsManualTotalOverridden(true);
+                    } else if (data.regione_residenza && !isNaN(parseFloat(data.regione_residenza)) && parseFloat(data.regione_residenza) > 0) {
+                        setTotaleManuale(parseFloat(data.regione_residenza).toFixed(2));
+                        setIsManualTotalOverridden(true);
+                    } else if (calculatedCoursesSum > 0) {
+                        setTotaleManuale(calculatedCoursesSum.toFixed(2));
+                        setIsManualTotalOverridden(false);
+                    } else {
+                        setTotaleManuale("");
+                        setIsManualTotalOverridden(false);
                     }
 
                     // AUTO-REGISTRA PRESENZE SOLO SE NON E' APERTO TRAMITE ADMIN (isFull=false)
@@ -172,6 +203,32 @@ function ScannerContent() {
         setIsEditCorsiOpen(true);
     };
 
+    const handleSaveManualTotal = async (val: string) => {
+        setTotaleManuale(val);
+        const num = parseFloat(val);
+        if (!isNaN(num) && num > 0 && allievo?.id) {
+            setIsManualTotalOverridden(true);
+            await supabase.from('allievi').update({
+                regione_residenza: num.toFixed(2)
+            }).eq('id', allievo.id);
+        }
+    };
+
+    const handleResetToCoursesSum = async () => {
+        const sum = allievo?.iscrizioni_corsi?.reduce((acc: number, iscr: any) => {
+            const isCustomPrice = iscr.prezzo_personalizzato !== null && iscr.prezzo_personalizzato !== undefined;
+            const price = isCustomPrice ? Number(iscr.prezzo_personalizzato) : (iscr.corsi?.prezzo_standard || 0);
+            return acc + price;
+        }, 0) || 0;
+        setTotaleManuale(sum > 0 ? sum.toFixed(2) : "");
+        setIsManualTotalOverridden(false);
+        if (allievo?.id) {
+            await supabase.from('allievi').update({
+                regione_residenza: null
+            }).eq('id', allievo.id);
+        }
+    };
+
     const handleSaveCorsi = async () => {
         setIsSavingCorsi(true);
         try {
@@ -187,6 +244,13 @@ function ScannerContent() {
                 }));
                 const { error } = await supabase.from('iscrizioni_corsi').insert(inserts);
                 if (error) throw error;
+            }
+
+            // Preserva il totale manuale se impostato dall'admin così non cambia
+            if (totaleManuale && !isNaN(parseFloat(totaleManuale)) && parseFloat(totaleManuale) > 0) {
+                await supabase.from('allievi').update({
+                    regione_residenza: parseFloat(totaleManuale).toFixed(2)
+                }).eq('id', allievo.id);
             }
             
             alert("Corsi studente aggiornati con successo!");
@@ -236,39 +300,41 @@ function ScannerContent() {
     const handleRegistraPagamento = async () => {
         if (!allievo) return
 
-        if (!hasCertificato) {
-            alert("Attenzione: È obbligatorio caricare e registrare il Certificato Medico prima di poter confermare il pagamento.");
+        const importoFinale = parseFloat(totaleManuale);
+        if (isNaN(importoFinale) || importoFinale <= 0) {
+            alert("Attenzione: Inserisci un totale mensile valido maggiore di 0€ prima di confermare il pagamento.");
             return;
         }
 
-        if (noCorsiAtAll) {
-            alert("Attenzione: È obbligatorio selezionare e assegnare almeno un corso all'allievo prima di poter procedere con il pagamento.");
-            openEditCorsi();
-            return;
+        // Avviso promemoria se mancano certificato o corsi, ma SENZA bloccare il pagamento
+        const avvisoMancanti: string[] = [];
+        if (!hasCertificato) avvisoMancanti.push("Certificato Medico non ancora caricato");
+        if (noCorsiAtAll) avvisoMancanti.push("Nessun corso ancora assegnato");
+
+        let confirmMsg = `Confermi la ricezione del pagamento di € ${importoFinale.toFixed(2)} per ${allievo.nome} ${allievo.cognome}?`;
+        if (avvisoMancanti.length > 0) {
+            confirmMsg = `⚠️ NOTA - DATI DA COMPLETARE:\n${avvisoMancanti.map(m => `• ${m}`).join('\n')}\n\nVuoi comunque procedere e confermare la ricezione del pagamento di € ${importoFinale.toFixed(2)}?`;
         }
 
-        // Pop-up di conferma pagamento
-        const isConfirmed = window.confirm(`Confermi la ricezione del pagamento di € ${totaleDaPagare.toFixed(2)} per ${allievo.nome} ${allievo.cognome}?`);
+        const isConfirmed = window.confirm(confirmMsg);
         if (!isConfirmed) return;
 
         try {
             const today = new Date()
             const meseT = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
-            const importo = allievo.iscrizioni_corsi?.reduce((acc: number, iscr: any) => {
-                const isCustomPrice = iscr.prezzo_personalizzato !== null && iscr.prezzo_personalizzato !== undefined;
-                const price = isCustomPrice ? Number(iscr.prezzo_personalizzato) : (iscr.corsi?.prezzo_standard || 0);
-                return acc + price;
-            }, 0) || 0;
 
             const { error } = await supabase.from('pagamenti').insert([{
                 allievo_id: allievo.id,
-                importo: importo,
+                importo: importoFinale,
                 mese_riferimento: meseT
             }])
 
             if (error) throw error
 
-            const { error: updateErr } = await supabase.from('allievi').update({ iscrizione_pagata: true }).eq('id', allievo.id)
+            const { error: updateErr } = await supabase.from('allievi').update({ 
+                iscrizione_pagata: true,
+                regione_residenza: importoFinale.toFixed(2)
+            }).eq('id', allievo.id)
             if (updateErr) throw updateErr
 
             setPagamentoFatto(true)
@@ -382,11 +448,14 @@ function ScannerContent() {
         )
     }
 
-    const totaleDaPagare = allievo.iscrizioni_corsi?.reduce((acc: number, iscr: any) => {
+    const calculatedCoursesSum = allievo.iscrizioni_corsi?.reduce((acc: number, iscr: any) => {
         const isCustomPrice = iscr.prezzo_personalizzato !== null && iscr.prezzo_personalizzato !== undefined;
         const price = isCustomPrice ? Number(iscr.prezzo_personalizzato) : (iscr.corsi?.prezzo_standard || 0);
         return acc + price;
     }, 0) || 0;
+    const totaleDaPagare = totaleManuale !== "" && !isNaN(parseFloat(totaleManuale))
+        ? parseFloat(totaleManuale)
+        : calculatedCoursesSum;
     const hasCertificato = allievo.certificati && allievo.certificati.length > 0 && allievo.certificati[0]?.url_foto;
     const hasCorsiInSegreteria = allievo.iscrizioni_corsi?.some((iscr: any) => iscr.corsi?.prezzo_standard === 0 && (iscr.prezzo_personalizzato === null || iscr.prezzo_personalizzato === undefined));
     const noCorsiAtAll = !allievo.iscrizioni_corsi || allievo.iscrizioni_corsi.length === 0;
@@ -522,7 +591,7 @@ function ScannerContent() {
                                         <span>Nessun corso ancora assegnato</span>
                                     </div>
                                     <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                                        L'allievo ha completato la pre-iscrizione al totem. Per confermare il pagamento, assegna i corsi a cui parteciperà.
+                                        L'allievo ha effettuato l'iscrizione al totem. Puoi incassare la quota e assegnare i corsi adesso o in un secondo momento.
                                     </p>
                                     <Button 
                                         onClick={openEditCorsi}
@@ -537,78 +606,93 @@ function ScannerContent() {
                     </div>
 
                     <div className="bg-primary/5 rounded-2xl p-5 md:p-6 border-2 border-primary/20 shadow-inner">
-                        <div className="flex justify-between items-end mb-6">
-                            <span className="text-muted-foreground font-semibold text-sm md:text-base uppercase tracking-wider">Totale Mensile</span>
-                            <div className="text-4xl md:text-5xl font-black text-primary flex flex-col items-end leading-none tracking-tighter">
-                                {totaleDaPagare === 0 && hasCorsiInSegreteria ? (
-                                    <span className="text-2xl font-semibold italic">In Segreteria</span>
-                                ) : (
-                                    <span className="flex items-center">
-                                        <Euro className="h-7 w-7 md:h-10 md:w-10 mr-1 opacity-80" />
-                                        {totaleDaPagare.toFixed(2)}
-                                    </span>
-                                )}
-                                {hasCorsiInSegreteria && totaleDaPagare > 0 && (
-                                    <span className="text-sm text-muted-foreground font-normal italic mt-2 whitespace-nowrap">
-                                        + Corsi in segreteria
-                                    </span>
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                            <div>
+                                <span className="text-muted-foreground font-semibold text-sm md:text-base uppercase tracking-wider block">
+                                    Totale Mensile
+                                </span>
+                                <span className="text-xs text-muted-foreground block mt-0.5">
+                                    {isManualTotalOverridden
+                                        ? "Quota impostata manualmente (non cambia modificando i corsi)"
+                                        : "Calcolata automaticamente dalla somma dei corsi"}
+                                </span>
+                            </div>
+
+                            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                                <div className="relative flex items-center w-full sm:w-48">
+                                    <Euro className="absolute left-3 h-5 w-5 text-primary pointer-events-none" />
+                                    <Input
+                                        type="number"
+                                        step="0.5"
+                                        min="0"
+                                        placeholder="0.00"
+                                        value={totaleManuale}
+                                        disabled={pagamentoFatto}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setTotaleManuale(val);
+                                            setIsManualTotalOverridden(true);
+                                        }}
+                                        onBlur={(e) => handleSaveManualTotal(e.target.value)}
+                                        className="text-2xl md:text-3xl font-black text-primary pl-9 pr-3 h-12 w-full bg-background border-2 border-primary/30 rounded-xl focus:border-primary text-right shadow-sm"
+                                    />
+                                </div>
+                                {!pagamentoFatto && isManualTotalOverridden && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-xs text-muted-foreground hover:text-foreground h-10 px-2 shrink-0"
+                                        title="Ripristina somma automatica dai corsi"
+                                        onClick={handleResetToCoursesSum}
+                                    >
+                                        Ripristina
+                                    </Button>
                                 )}
                             </div>
                         </div>
 
                         <Button
-                            className={`w-full h-16 text-lg md:text-xl font-bold shadow-lg transition-transform ${(!pagamentoFatto && hasCertificato && !noCorsiAtAll) ? 'active:scale-95' : ''}`}
-                            onClick={noCorsiAtAll && hasCertificato && !pagamentoFatto ? openEditCorsi : handleRegistraPagamento}
-                            disabled={pagamentoFatto || (!hasCertificato && noCorsiAtAll) || (!hasCertificato)}
-                            variant={pagamentoFatto ? "secondary" : (hasCertificato && !noCorsiAtAll ? "default" : "outline")}
+                            className={`w-full h-16 text-lg md:text-xl font-bold shadow-lg transition-transform ${!pagamentoFatto ? 'active:scale-95' : ''}`}
+                            onClick={handleRegistraPagamento}
+                            disabled={pagamentoFatto}
+                            variant={pagamentoFatto ? "secondary" : "default"}
                         >
                             <CheckCircle2 className="mr-2 h-6 w-6 md:h-7 md:w-7" />
                             {pagamentoFatto
-                                ? "Pagato per questo mese"
-                                : !hasCertificato && noCorsiAtAll
-                                    ? "Richiede Certificato e Corsi"
-                                    : !hasCertificato
-                                        ? "Richiede Certificato Medico"
-                                        : noCorsiAtAll
-                                            ? "Seleziona Corsi per Pagare"
-                                            : "Conferma Ricezione Soldi"}
+                                ? `Quota Saldata per questo mese (${totaleManuale ? `€ ${parseFloat(totaleManuale).toFixed(2)}` : 'Saldato'})`
+                                : `Conferma Ricezione Soldi ${totaleManuale && parseFloat(totaleManuale) > 0 ? `(€ ${parseFloat(totaleManuale).toFixed(2)})` : ''}`}
                         </Button>
 
-                        {!pagamentoFatto && (
-                            <div className="mt-4 space-y-2 text-xs md:text-sm bg-background/60 p-3.5 rounded-xl border border-primary/20">
-                                <p className="font-semibold text-foreground">Requisiti per confermare il pagamento:</p>
-                                <div className="flex items-center justify-between">
-                                    <span className="flex items-center gap-2">
-                                        {hasCertificato ? (
-                                            <CheckCircle2 className="w-4 h-4 text-green-600" />
-                                        ) : (
-                                            <AlertCircle className="w-4 h-4 text-amber-500" />
-                                        )}
-                                        <span className={hasCertificato ? "text-green-700 dark:text-green-400 font-medium" : "text-amber-700 dark:text-amber-400 font-semibold"}>
-                                            1. Certificato Medico
-                                        </span>
-                                    </span>
-                                    <span className="text-xs">
-                                        {hasCertificato ? "Presente ✓" : "(Mancante - Carica sotto)"}
-                                    </span>
+                        {/* Avviso promemoria se mancano certificato o corsi */}
+                        {(!hasCertificato || noCorsiAtAll) && (
+                            <div className="mt-4 bg-amber-500/10 border-2 border-amber-500/30 rounded-xl p-4 flex flex-col gap-2 shadow-sm text-left">
+                                <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-300 text-sm md:text-base">
+                                    <AlertCircle className="h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+                                    <span>Promemoria Segreteria: Dati da completare</span>
                                 </div>
-                                <div className="flex items-center justify-between">
-                                    <span className="flex items-center gap-2">
-                                        {!noCorsiAtAll ? (
-                                            <CheckCircle2 className="w-4 h-4 text-green-600" />
-                                        ) : (
-                                            <AlertCircle className="w-4 h-4 text-amber-500" />
-                                        )}
-                                        <span className={!noCorsiAtAll ? "text-green-700 dark:text-green-400 font-medium" : "text-amber-700 dark:text-amber-400 font-semibold"}>
-                                            2. Assegnazione Corsi
-                                        </span>
-                                    </span>
-                                    <span className="text-xs">
-                                        {!noCorsiAtAll 
-                                            ? `${allievo.iscrizioni_corsi.length} assegnati ✓` 
-                                            : <button type="button" onClick={openEditCorsi} className="text-primary font-bold underline hover:opacity-80">Assegna ora</button>
-                                        }
-                                    </span>
+                                <p className="text-xs text-muted-foreground">
+                                    Puoi incassare la quota subito, ma ricordati di regolarizzare i seguenti requisiti:
+                                </p>
+                                <div className="space-y-2 mt-1">
+                                    {!hasCertificato && (
+                                        <div className="flex items-center justify-between text-xs md:text-sm text-amber-900 dark:text-amber-200 bg-amber-500/5 p-2.5 rounded-lg border border-amber-500/20">
+                                            <span>• <strong>Certificato Medico non caricato:</strong> ricordati di caricare la foto nella sezione in basso.</span>
+                                        </div>
+                                    )}
+                                    {noCorsiAtAll && (
+                                        <div className="flex items-center justify-between text-xs md:text-sm text-amber-900 dark:text-amber-200 bg-amber-500/5 p-2.5 rounded-lg border border-amber-500/20">
+                                            <span>• <strong>Nessun corso ancora assegnato:</strong> ricordati di inserire i corsi dell'allievo.</span>
+                                            <Button 
+                                                size="sm" 
+                                                variant="outline" 
+                                                className="h-7 text-xs border-amber-500/40 text-amber-900 dark:text-amber-200 hover:bg-amber-500/20 shrink-0 ml-2"
+                                                onClick={openEditCorsi}
+                                            >
+                                                <Plus className="h-3 w-3 mr-1" /> Assegna Corsi
+                                            </Button>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
