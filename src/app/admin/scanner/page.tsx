@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { CheckCircle2, AlertCircle, Euro, User, Loader2, Download, Upload, Edit, Check, Plus } from "lucide-react"
+import { CheckCircle2, AlertCircle, Euro, User, Loader2, Download, Upload, Edit, Check, Plus, Printer, RefreshCw } from "lucide-react"
+import { StampaRicevuta } from "@/components/admin/stampa-ricevuta"
 
 // FORZA IL RENDERING DINAMICO: Risolve l'errore "Command npm run build exited with 1" su Vercel
 export const dynamic = 'force-dynamic';
@@ -45,6 +46,11 @@ function ScannerContent() {
     // Totale Mensile Manuale / Personalizzato
     const [totaleManuale, setTotaleManuale] = useState<string>("")
     const [isManualTotalOverridden, setIsManualTotalOverridden] = useState(false)
+
+    // Stampa Ricevuta e Aggiornamento Quota
+    const [stampaCorrente, setStampaCorrente] = useState<any>(null)
+    const [ultimoPagamento, setUltimoPagamento] = useState<any>(null)
+    const [isUpdatingQuota, setIsUpdatingQuota] = useState(false)
 
     useEffect(() => {
         const fetchStudente = async () => {
@@ -110,12 +116,25 @@ function ScannerContent() {
 
                     const { data: checkPagamento } = await supabase
                         .from('pagamenti')
-                        .select('id, importo')
+                        .select('id, importo, data_pagamento, mese_riferimento')
                         .eq('allievo_id', data.id)
                         .eq('mese_riferimento', meseT)
+                        .order('data_pagamento', { ascending: false })
 
                     if (checkPagamento && checkPagamento.length > 0) {
                         setPagamentoFatto(true)
+                        setUltimoPagamento(checkPagamento[0])
+                    } else {
+                        // Recupera comunque l'ultimo pagamento storico per le ricevute
+                        const { data: lastPag } = await supabase
+                            .from('pagamenti')
+                            .select('id, importo, data_pagamento, mese_riferimento')
+                            .eq('allievo_id', data.id)
+                            .order('data_pagamento', { ascending: false })
+                            .limit(1)
+                        if (lastPag && lastPag.length > 0) {
+                            setUltimoPagamento(lastPag[0])
+                        }
                     }
 
                     // Calcolo somma standard dai corsi
@@ -297,6 +316,94 @@ function ScannerContent() {
         }
     }
 
+    const handleStampaRicevuta = (customAmount?: number) => {
+        if (!allievo) return;
+        const importoVal = customAmount !== undefined 
+            ? customAmount 
+            : (parseFloat(totaleManuale) || ultimoPagamento?.importo || 0);
+
+        const pagData = {
+            id: ultimoPagamento?.id || `REC-${Date.now()}`,
+            importo: importoVal,
+            data_pagamento: ultimoPagamento?.data_pagamento || new Date().toISOString(),
+            mese_riferimento: ultimoPagamento?.mese_riferimento || `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`,
+            causale: "Quota tesseramento e iscrizione per la Stagione 2026/2027",
+            allievo: {
+                nome: allievo.nome,
+                cognome: allievo.cognome,
+                tessera_numero: allievo.tessera_numero || "N/A",
+                codice_fiscale: allievo.codice_fiscale || ""
+            }
+        };
+
+        setStampaCorrente(pagData);
+        setTimeout(() => {
+            window.print();
+            setTimeout(() => setStampaCorrente(null), 1000);
+        }, 150);
+    };
+
+    const handleAggiornaQuota = async () => {
+        if (!allievo) return;
+
+        const importoFinale = parseFloat(totaleManuale);
+        if (isNaN(importoFinale) || importoFinale <= 0) {
+            alert("Attenzione: Inserisci un importo valido maggiore di 0€.");
+            return;
+        }
+
+        const isConfirmed = window.confirm(
+            `Confermi di voler rimodificare la quota registrata a € ${importoFinale.toFixed(2)} per ${allievo.nome} ${allievo.cognome}?`
+        );
+        if (!isConfirmed) return;
+
+        setIsUpdatingQuota(true);
+        try {
+            const today = new Date();
+            const meseT = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+
+            if (ultimoPagamento?.id) {
+                const { error: updatePagErr } = await supabase
+                    .from('pagamenti')
+                    .update({ importo: importoFinale })
+                    .eq('id', ultimoPagamento.id);
+                if (updatePagErr) throw updatePagErr;
+
+                setUltimoPagamento((prev: any) => ({ ...prev, importo: importoFinale }));
+            } else {
+                const { data: newPag, error: insertPagErr } = await supabase
+                    .from('pagamenti')
+                    .insert([{
+                        allievo_id: allievo.id,
+                        importo: importoFinale,
+                        mese_riferimento: meseT
+                    }])
+                    .select()
+                    .single();
+                if (insertPagErr) throw insertPagErr;
+                setUltimoPagamento(newPag);
+            }
+
+            // Salva la quota aggiornata su allievi per preservarla da modifiche future
+            const { error: updateAllievoErr } = await supabase
+                .from('allievi')
+                .update({
+                    iscrizione_pagata: true,
+                    regione_residenza: importoFinale.toFixed(2)
+                })
+                .eq('id', allievo.id);
+            if (updateAllievoErr) throw updateAllievoErr;
+
+            setPagamentoFatto(true);
+            alert(`Quota aggiornata con successo a € ${importoFinale.toFixed(2)}!`);
+        } catch (err: any) {
+            console.error("Errore aggiornamento quota:", err);
+            alert("Errore durante l'aggiornamento della quota: " + (err?.message || "Errore sconosciuto"));
+        } finally {
+            setIsUpdatingQuota(false);
+        }
+    };
+
     const handleRegistraPagamento = async () => {
         if (!allievo) return
 
@@ -323,13 +430,17 @@ function ScannerContent() {
             const today = new Date()
             const meseT = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
 
-            const { error } = await supabase.from('pagamenti').insert([{
+            const { data: newPag, error } = await supabase.from('pagamenti').insert([{
                 allievo_id: allievo.id,
                 importo: importoFinale,
                 mese_riferimento: meseT
-            }])
+            }]).select().single()
 
             if (error) throw error
+
+            if (newPag) {
+                setUltimoPagamento(newPag);
+            }
 
             const { error: updateErr } = await supabase.from('allievi').update({ 
                 iscrizione_pagata: true,
@@ -339,7 +450,7 @@ function ScannerContent() {
 
             setPagamentoFatto(true)
 
-            // Invia la Tessera Definitiva via email
+            // Invia la Tessera Definitiva via email se disponibile
             if (allievo.email) {
                 try {
                     await fetch('/api/send-tessera-definitiva', {
@@ -352,14 +463,17 @@ function ScannerContent() {
                             codice_fiscale: allievo.codice_fiscale || ''
                         })
                     });
-                    // Feedback per l'amministratore
-                    alert(`Pagamento registrato e Tessera d'accesso inviata via email a ${allievo.email}!`);
                 } catch (emailErr) {
                     console.error("Errore invio tessera definitiva:", emailErr)
-                    alert("Pagamento registrato correttamente, ma si è verificato un errore nell'invio della mail all'allievo.");
                 }
-            } else {
-                alert("Pagamento registrato con successo! L'allievo tuttavia non ha una email associata a cui spedire la tessera.");
+            }
+
+            // Notifica e opzione di scaricare subito la ricevuta doppia copia
+            const vuoiRicevuta = window.confirm(
+                `Pagamento di € ${importoFinale.toFixed(2)} registrato con successo!\n\nVuoi scaricare/stampare subito la Ricevuta per il socio (in doppia copia per la Stagione 2026/2027)?`
+            );
+            if (vuoiRicevuta) {
+                handleStampaRicevuta(importoFinale);
             }
 
         } catch (err: any) {
@@ -516,6 +630,9 @@ function ScannerContent() {
 
     return (
         <div className="w-full max-w-xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 px-4 pt-6 pb-24 md:pt-10">
+            {/* Modalità Stampa Madre/Figlia Invisibile che prende il sopravvento quando attivata */}
+            {stampaCorrente && <StampaRicevuta pagamento={stampaCorrente as any} />}
+
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-center md:text-left">Esito Scansione</h1>
 
             {pagamentoFatto && (
@@ -609,11 +726,11 @@ function ScannerContent() {
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                             <div>
                                 <span className="text-muted-foreground font-semibold text-sm md:text-base uppercase tracking-wider block">
-                                    Totale Mensile
+                                    Totale Quota / Mensile
                                 </span>
                                 <span className="text-xs text-muted-foreground block mt-0.5">
                                     {isManualTotalOverridden
-                                        ? "Quota impostata manualmente (non cambia modificando i corsi)"
+                                        ? "Quota concordata manualmente (modificabile sempre)"
                                         : "Calcolata automaticamente dalla somma dei corsi"}
                                 </span>
                             </div>
@@ -627,7 +744,6 @@ function ScannerContent() {
                                         min="0"
                                         placeholder="0.00"
                                         value={totaleManuale}
-                                        disabled={pagamentoFatto}
                                         onChange={(e) => {
                                             const val = e.target.value;
                                             setTotaleManuale(val);
@@ -637,7 +753,7 @@ function ScannerContent() {
                                         className="text-2xl md:text-3xl font-black text-primary pl-9 pr-3 h-12 w-full bg-background border-2 border-primary/30 rounded-xl focus:border-primary text-right shadow-sm"
                                     />
                                 </div>
-                                {!pagamentoFatto && isManualTotalOverridden && (
+                                {isManualTotalOverridden && (
                                     <Button
                                         type="button"
                                         variant="ghost"
@@ -652,17 +768,72 @@ function ScannerContent() {
                             </div>
                         </div>
 
-                        <Button
-                            className={`w-full h-16 text-lg md:text-xl font-bold shadow-lg transition-transform ${!pagamentoFatto ? 'active:scale-95' : ''}`}
-                            onClick={handleRegistraPagamento}
-                            disabled={pagamentoFatto}
-                            variant={pagamentoFatto ? "secondary" : "default"}
-                        >
-                            <CheckCircle2 className="mr-2 h-6 w-6 md:h-7 md:w-7" />
-                            {pagamentoFatto
-                                ? `Quota Saldata per questo mese (${totaleManuale ? `€ ${parseFloat(totaleManuale).toFixed(2)}` : 'Saldato'})`
-                                : `Conferma Ricezione Soldi ${totaleManuale && parseFloat(totaleManuale) > 0 ? `(€ ${parseFloat(totaleManuale).toFixed(2)})` : ''}`}
-                        </Button>
+                        {/* Azioni Pagamento & Ricevuta */}
+                        <div className="space-y-3">
+                            {!pagamentoFatto ? (
+                                <div className="space-y-2">
+                                    <Button
+                                        className="w-full h-16 text-lg md:text-xl font-bold shadow-lg transition-transform active:scale-95 bg-primary hover:bg-primary/90 text-primary-foreground"
+                                        onClick={handleRegistraPagamento}
+                                    >
+                                        <CheckCircle2 className="mr-2 h-6 w-6 md:h-7 md:w-7" />
+                                        Conferma Ricezione Soldi {totaleManuale && parseFloat(totaleManuale) > 0 ? `(€ ${parseFloat(totaleManuale).toFixed(2)})` : ''}
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => handleStampaRicevuta()}
+                                        className="w-full h-10 text-xs font-semibold text-muted-foreground hover:text-foreground border-primary/20 flex items-center justify-center gap-1.5"
+                                    >
+                                        <Printer className="h-4 w-4" /> Anteprima Ricevuta Doppia Copia
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {/* Badge di pagamento completato */}
+                                    <div className="flex items-center justify-between bg-green-500/10 border border-green-500/30 rounded-xl p-3 text-green-800 dark:text-green-300">
+                                        <div className="flex items-center gap-2 font-semibold text-sm">
+                                            <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
+                                            <span>Quota Pagata Registrata: € {ultimoPagamento?.importo ? Number(ultimoPagamento.importo).toFixed(2) : (totaleManuale ? parseFloat(totaleManuale).toFixed(2) : '0.00')}</span>
+                                        </div>
+                                        <span className="text-xs text-green-700 dark:text-green-400 bg-green-500/20 px-2.5 py-0.5 rounded-full font-bold">
+                                            Saldato
+                                        </span>
+                                    </div>
+
+                                    {/* Griglia 2 pulsanti: Rimodifica Quota e Scarica Ricevuta */}
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            disabled={isUpdatingQuota}
+                                            onClick={handleAggiornaQuota}
+                                            className="h-14 font-bold border-2 border-primary/40 hover:bg-primary/10 text-primary shadow-sm active:scale-95 transition-all text-sm md:text-base flex items-center justify-center gap-2"
+                                        >
+                                            {isUpdatingQuota ? (
+                                                <Loader2 className="h-5 w-5 animate-spin" />
+                                            ) : (
+                                                <RefreshCw className="h-5 w-5" />
+                                            )}
+                                            Rimodifica Quota {totaleManuale && parseFloat(totaleManuale) > 0 ? `(€ ${parseFloat(totaleManuale).toFixed(2)})` : ''}
+                                        </Button>
+
+                                        <Button
+                                            type="button"
+                                            onClick={() => handleStampaRicevuta()}
+                                            className="h-14 font-bold bg-amber-500 hover:bg-amber-600 text-white shadow-md active:scale-95 transition-all text-sm md:text-base flex items-center justify-center gap-2"
+                                        >
+                                            <Printer className="h-5 w-5" />
+                                            Scarica / Stampa Ricevuta
+                                        </Button>
+                                    </div>
+                                    <p className="text-[11px] text-center text-muted-foreground italic">
+                                        Ricevuta ufficiale in doppia copia (Copia Associazione / Copia Socio) per la Stagione 2026/2027.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
 
                         {/* Avviso promemoria se mancano certificato o corsi */}
                         {(!hasCertificato || noCorsiAtAll) && (

@@ -8,6 +8,7 @@ interface RawAllievo {
     nome?: string
     cognome?: string
     tessera_numero?: string
+    codice_fiscale?: string
 }
 
 interface RawPagamento {
@@ -15,6 +16,7 @@ interface RawPagamento {
     importo: number
     data_pagamento: string
     mese_riferimento: string
+    causale?: string
     allievo: RawAllievo
 }
 
@@ -26,51 +28,60 @@ interface StampaRicevutaProps {
  * Questo componente è nascosto su schermo normale.
  * Diventa visibile occupando l'intera pagina (`fixed inset-0`) SOLO durante la stampa (`print:`).
  * Imposta un layout A4 divisibile in due metà identiche 
- * (Copia Associazione / Copia Allievo).
+ * (Copia Associazione / Copia Socio).
  */
 export function StampaRicevuta({ pagamento }: StampaRicevutaProps) {
 
-    const receiptHTML = (tipo: "Associazione" | "Allievo") => (
+    const causaleTesto = pagamento.causale || `Quota tesseramento e iscrizione per la Stagione 2026/2027 (${format(new Date(`${pagamento.mese_riferimento}-01`), "MMMM yyyy", { locale: it })})`
+
+    const receiptHTML = (tipo: "Associazione" | "Socio") => (
         <div className="h-[50%] p-8 border-b-2 border-dashed border-gray-400 flex flex-col justify-between">
 
             {/* Intestazione */}
             <div className="flex justify-between items-start">
                 <div>
-                    <h1 className="text-2xl font-bold uppercase mb-1">Associazione Sportiva ASD</h1>
-                    <p className="text-sm text-gray-600">Via della Danza, 1 - 00100 Roma (RM)</p>
-                    <p className="text-sm text-gray-600">C.F. / P.IVA: 12345678901</p>
+                    <h1 className="text-2xl font-black uppercase tracking-tight text-black mb-0.5">ASD BIGDANCE SCHOOL</h1>
+                    <p className="text-xs text-gray-700 font-semibold uppercase tracking-wider">Associazione Sportiva Dilettantistica</p>
+                    <p className="text-xs text-gray-600 mt-0.5">Attività di Danza Sportiva e Promozione Sociale</p>
+                    <p className="text-xs text-gray-600">Sede Sociale &bull; C.F. / P.IVA Associazione</p>
                 </div>
-                <div className="text-right border-l-4 border-gray-900 pl-4">
-                    <h2 className="text-xl font-bold">RICEVUTA</h2>
-                    <p className="text-gray-600">N° {pagamento.id.replace('p', '2024/')}</p>
-                    <p className="text-sm font-semibold mt-1">Copia {tipo}</p>
+                <div className="text-right border-l-4 border-black pl-4">
+                    <h2 className="text-xl font-black tracking-wider">RICEVUTA</h2>
+                    <p className="text-gray-700 text-xs font-semibold">N° {pagamento.id.length > 12 ? pagamento.id.slice(0, 8).toUpperCase() : pagamento.id.replace('p', '2026/')}</p>
+                    <p className="text-xs font-bold uppercase tracking-wider mt-1 px-2 py-0.5 bg-gray-100 border border-gray-300 rounded inline-block">Copia {tipo}</p>
                 </div>
             </div>
 
             {/* Corpo Ricevuta */}
-            <div className="my-8">
-                <p className="text-lg leading-relaxed">
-                    Ricevuto da: <strong className="uppercase">{pagamento.allievo.nome} {pagamento.allievo.cognome}</strong>
+            <div className="my-5 space-y-3">
+                <div className="text-base leading-relaxed">
+                    Ricevuto dal Socio: <strong className="uppercase text-lg text-black">{pagamento.allievo.nome} {pagamento.allievo.cognome}</strong>
+                    {pagamento.allievo.codice_fiscale && (
+                        <span> &mdash; C.F.: <strong className="uppercase">{pagamento.allievo.codice_fiscale}</strong></span>
+                    )}
                     <br />
-                    Tessera Numero: <strong>{pagamento.allievo.tessera_numero}</strong>
-                </p>
-                <p className="text-lg leading-relaxed mt-4">
-                    La somma di <strong className="text-2xl ml-2">€ {pagamento.importo.toFixed(2)}</strong>
-                </p>
-                <p className="text-lg leading-relaxed mt-4">
-                    Causale: Pagamento quota per la mensilità di <strong className="capitalize">{format(new Date(`${pagamento.mese_riferimento}-01`), "MMMM yyyy", { locale: it })}</strong>.
+                    Tessera Socio Numero: <strong className="text-black text-lg">{pagamento.allievo.tessera_numero || "N/A"}</strong>
+                </div>
+
+                <div className="py-2.5 px-4 bg-gray-50 border border-gray-300 rounded-lg inline-flex items-center">
+                    <span className="text-xs uppercase tracking-wider text-gray-600 font-semibold">Somma versata:</span>
+                    <strong className="text-2xl ml-3 font-black text-black">€ {Number(pagamento.importo).toFixed(2)}</strong>
+                </div>
+
+                <p className="text-base leading-relaxed">
+                    Causale: <strong className="text-black">{causaleTesto}</strong>
                 </p>
             </div>
 
             {/* Footer */}
-            <div className="flex justify-between items-end mt-8">
+            <div className="flex justify-between items-end mt-4 pt-3 border-t border-gray-300">
                 <div>
-                    <p className="text-sm">Data emissione</p>
-                    <p className="font-semibold">{format(new Date(pagamento.data_pagamento), "dd/MM/yyyy HH:mm")}</p>
+                    <p className="text-xs text-gray-500 uppercase font-semibold">Data Emissione</p>
+                    <p className="font-bold text-sm text-black">{format(new Date(pagamento.data_pagamento || new Date()), "dd/MM/yyyy HH:mm")}</p>
                 </div>
                 <div className="w-64 text-center">
-                    <div className="border-b border-black mb-2 h-10"></div>
-                    <p className="text-sm text-gray-600">Timbro e Firma Associazione</p>
+                    <div className="border-b border-black mb-1.5 h-8"></div>
+                    <p className="text-[11px] text-gray-700 font-semibold uppercase">Timbro e Firma per ASD BigDance School</p>
                 </div>
             </div>
         </div>
@@ -95,7 +106,7 @@ export function StampaRicevuta({ pagamento }: StampaRicevutaProps) {
             {receiptHTML("Associazione")}
 
             {/* Bottom Half: Figlia */}
-            {receiptHTML("Allievo")}
+            {receiptHTML("Socio")}
         </div>
     )
 }
