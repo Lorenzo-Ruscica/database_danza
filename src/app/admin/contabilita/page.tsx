@@ -75,14 +75,9 @@ export default function ContabilitaPage() {
         fetchPagamenti()
     }, [])
 
-    // Esegue la stampa temporanea montando prima il DOM, poi chiamando print()
+    // Esegue la stampa aprendo la ricevuta in portale
     const handlePrint = (pagamento: any) => {
         setStampaCorrente(pagamento)
-        setTimeout(() => {
-            window.print()
-            // Reset state after print dialog is closed
-            setTimeout(() => setStampaCorrente(null), 1000)
-        }, 100)
     }
 
     const filteredPagamenti = pagamenti.filter(p =>
@@ -103,8 +98,14 @@ export default function ContabilitaPage() {
 
     return (
         <div className="flex flex-col gap-6 relative">
-            {/* Modalità Stampa Madre/Figlia Invisibile che prende il sopravvento quando attivata */}
-            {stampaCorrente && <StampaRicevuta pagamento={stampaCorrente as any} />}
+            {/* Modalità Stampa Madre/Figlia con portale e anteprima */}
+            {stampaCorrente && (
+                <StampaRicevuta 
+                    pagamento={stampaCorrente as any} 
+                    onClose={() => setStampaCorrente(null)} 
+                    autoPrint={true} 
+                />
+            )}
 
             <div className="flex items-center justify-between">
                 <h1 className="text-3xl font-bold tracking-tight">Contabilità</h1>

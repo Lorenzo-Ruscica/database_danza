@@ -337,10 +337,6 @@ function ScannerContent() {
         };
 
         setStampaCorrente(pagData);
-        setTimeout(() => {
-            window.print();
-            setTimeout(() => setStampaCorrente(null), 1000);
-        }, 150);
     };
 
     const handleAggiornaQuota = async () => {
@@ -630,8 +626,14 @@ function ScannerContent() {
 
     return (
         <div className="w-full max-w-xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 px-4 pt-6 pb-24 md:pt-10">
-            {/* Modalità Stampa Madre/Figlia Invisibile che prende il sopravvento quando attivata */}
-            {stampaCorrente && <StampaRicevuta pagamento={stampaCorrente as any} />}
+            {/* Modalità Stampa Madre/Figlia con portale e anteprima */}
+            {stampaCorrente && (
+                <StampaRicevuta 
+                    pagamento={stampaCorrente as any} 
+                    onClose={() => setStampaCorrente(null)} 
+                    autoPrint={true} 
+                />
+            )}
 
             <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-center md:text-left">Esito Scansione</h1>
 
