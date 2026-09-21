@@ -53,10 +53,10 @@ export function StampaRicevuta({ pagamento, onClose, autoPrint = true }: StampaR
             {/* Intestazione */}
             <div className="flex justify-between items-start border-b border-zinc-200 pb-4">
                 <div>
-                    <h1 className="text-xl md:text-2xl font-black uppercase tracking-tight text-black mb-0.5">ASD BIGDANCE SCHOOL</h1>
+                    <h1 className="text-xl md:text-2xl font-black uppercase tracking-tight text-black mb-0.5">Big Dance School</h1>
                     <p className="text-xs text-zinc-700 font-bold uppercase tracking-wider">Associazione Sportiva Dilettantistica</p>
-                    <p className="text-[11px] text-zinc-600 mt-0.5">Attività di Danza Sportiva e Promozione Sociale</p>
-                    <p className="text-[11px] text-zinc-600">Sede Sociale &bull; C.F. / P.IVA Associazione</p>
+                    <p className="text-[11px] text-zinc-600 mt-0.5">Via Pisana Livornese 23 &bull; 57023 Cecina (LI)</p>
+                    <p className="text-[11px] text-zinc-700 font-semibold mt-0.5">C.F. 92051860499</p>
                 </div>
                 <div className="text-right border-l-4 border-black pl-4">
                     <h2 className="text-lg md:text-xl font-black tracking-wider text-black">RICEVUTA</h2>
@@ -94,7 +94,7 @@ export function StampaRicevuta({ pagamento, onClose, autoPrint = true }: StampaR
                 </div>
                 <div className="w-56 md:w-64 text-center">
                     <div className="border-b border-black mb-1.5 h-8"></div>
-                    <p className="text-[10px] md:text-[11px] text-zinc-700 font-semibold uppercase">Timbro e Firma per ASD BigDance School</p>
+                    <p className="text-[10px] md:text-[11px] text-zinc-700 font-semibold uppercase">Timbro e Firma per ASD Big Dance School</p>
                 </div>
             </div>
         </div>
@@ -171,7 +171,7 @@ export function StampaRicevuta({ pagamento, onClose, autoPrint = true }: StampaR
                     <Printer className="h-5 w-5 text-amber-400" />
                     <div>
                         <span className="font-bold text-sm md:text-base block">Ricevuta Ufficiale Doppia Copia</span>
-                        <span className="text-xs text-zinc-400 block">Stagione Sportiva 2026/2027 &bull; ASD BigDance School</span>
+                        <span className="text-xs text-zinc-400 block">Stagione Sportiva 2026/2027 &bull; ASD Big Dance School &bull; Cecina (LI)</span>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
