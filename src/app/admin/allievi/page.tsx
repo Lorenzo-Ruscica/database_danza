@@ -133,37 +133,37 @@ export default function AllieviPage() {
     }
 
     return (
-        <div className="flex flex-col gap-6">
-            <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold tracking-tight">Gestione Allievi</h1>
-                <Button onClick={() => window.open('/', '_blank')}>
+        <div className="flex flex-col gap-4 sm:gap-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Gestione Allievi</h1>
+                <Button onClick={() => window.open('/', '_blank')} className="w-full sm:w-auto h-11 shadow-sm font-semibold">
                     <Plus className="mr-2 h-4 w-4" /> Nuovo Allievo
                 </Button>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Elenco iscritti</CardTitle>
-                    <CardDescription>
+            <Card className="shadow-sm">
+                <CardHeader className="p-4 sm:p-6">
+                    <CardTitle className="text-lg sm:text-xl">Elenco iscritti</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
                         Gestisci le anagrafiche, lo stato dei pagamenti di iscrizione e i certificati medici.
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="flex items-center py-4">
-                        <div className="relative w-full max-w-sm">
+                <CardContent className="p-4 sm:p-6 pt-0">
+                    <div className="flex items-center py-2 sm:py-4">
+                        <div className="relative w-full sm:max-w-sm">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
                                 type="search"
                                 placeholder="Cerca per nome o tessera..."
-                                className="pl-8"
+                                className="pl-8 h-11 text-sm sm:text-base"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <div className="rounded-md border">
-                        <Table>
+                    <div className="rounded-md border overflow-x-auto w-full">
+                        <Table className="min-w-[680px]">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Nominativo</TableHead>

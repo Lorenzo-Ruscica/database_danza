@@ -10,17 +10,20 @@ export function VirtualKeyboard() {
     const focusedInputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null)
 
     useEffect(() => {
-        // Controllo dispositivo: La tastiera si apre SOLO su tablet/smartphone (dispositivi touch)
-        const isTouchDevice = () => {
-            return (('ontouchstart' in window) ||
+        // Controllo dispositivo: La tastiera Kiosk su schermo si apre SOLO su Totem fisici / grandi schermi touch (>= 1024px)
+        // Su smartphone e tablet piccoli si usa la tastiera nativa del sistema operativo per la massima usabilità
+        const isKioskTouchDevice = () => {
+            const hasTouch = (('ontouchstart' in window) ||
                 (navigator.maxTouchPoints > 0) ||
                 // @ts-ignore
-                (navigator.msMaxTouchPoints > 0))
+                (navigator.msMaxTouchPoints > 0));
+            const isLargeScreen = typeof window !== 'undefined' && window.innerWidth >= 1024;
+            return hasTouch && isLargeScreen;
         }
 
         const handleFocus = (e: FocusEvent) => {
-            // Se NON è un dispositivo touch (es. è un PC col mouse), ignoriamo l'apertura
-            if (!isTouchDevice()) return;
+            // Se NON è un totem touch grande, usiamo la tastiera nativa del dispositivo
+            if (!isKioskTouchDevice()) return;
 
             const target = e.target as HTMLElement;
             if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {

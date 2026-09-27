@@ -182,67 +182,75 @@ export default function CorsiPage() {
     return (
         <div className="flex flex-col gap-6">
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <h1 className="text-3xl font-bold tracking-tight">Gestione Corsi</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Gestione Corsi</h1>
 
                 <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
                     <DialogTrigger asChild>
-                        <Button className="w-full sm:w-auto">
+                        <Button className="w-full sm:w-auto h-11 font-semibold shadow-sm">
                             <Plus className="mr-2 h-4 w-4" /> Nuovo Corso
                         </Button>
                     </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
+                    <DialogContent className="w-[95vw] sm:max-w-[450px] p-4 sm:p-6">
                         <DialogHeader>
                             <DialogTitle>Aggiungi Nuovo Corso</DialogTitle>
-                            <DialogDescription>
-                                Inserisci i dettagli del nuovo corso. Clicca salva quando hai finito. Questo corso apparirà nei moduli iscrizione.
+                            <DialogDescription className="text-xs sm:text-sm">
+                                Inserisci i dettagli del nuovo corso. Questo corso apparirà nei moduli iscrizione.
                             </DialogDescription>
                         </DialogHeader>
-                        <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="nome" className="text-right">
-                                    Nome *
+                        <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="nome" className="text-xs sm:text-sm font-medium">
+                                    Nome Corso *
                                 </Label>
                                 <Input
                                     id="nome"
                                     placeholder="Es. Hip Hop Avanzato"
-                                    className="col-span-3"
                                     value={newCorso.nome}
                                     onChange={(e) => setNewCorso({ ...newCorso, nome: e.target.value })}
+                                    className="h-11 text-sm sm:text-base"
                                 />
                             </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="prezzo" className="text-right">
-                                    Prezzo Mensile
+                            <div className="space-y-1.5">
+                                <Label htmlFor="prezzo" className="text-xs sm:text-sm font-medium">
+                                    Prezzo Mensile (€)
                                 </Label>
-                                <div className="col-span-3">
-                                    <Input
-                                        id="prezzo"
-                                        type="number"
-                                        placeholder="0 per In Segreteria"
-                                        value={newCorso.prezzo_standard || ''}
-                                        onChange={(e) => setNewCorso({ ...newCorso, prezzo_standard: parseFloat(e.target.value) || 0 })}
-                                    />
-                                    <p className="text-[10px] text-muted-foreground mt-1 text-right">L'importo 0 figurerà come "In Segreteria"</p>
-                                </div>
+                                <Input
+                                    id="prezzo"
+                                    type="number"
+                                    placeholder="0 per In Segreteria"
+                                    value={newCorso.prezzo_standard || ''}
+                                    onChange={(e) => setNewCorso({ ...newCorso, prezzo_standard: parseFloat(e.target.value) || 0 })}
+                                    className="h-11 text-sm sm:text-base"
+                                />
+                                <p className="text-[11px] text-muted-foreground">L'importo 0 figurerà come "In Segreteria"</p>
                             </div>
-                            <div className="grid grid-cols-4 items-start gap-4">
-                                <Label htmlFor="descrizione" className="text-right mt-2">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="descrizione" className="text-xs sm:text-sm font-medium">
                                     Descrizione
                                 </Label>
                                 <Textarea
                                     id="descrizione"
                                     placeholder="Opzionale"
-                                    className="col-span-3"
                                     value={newCorso.descrizione}
                                     onChange={(e) => setNewCorso({ ...newCorso, descrizione: e.target.value })}
+                                    className="text-sm min-h-[80px]"
                                 />
                             </div>
                         </div>
-                        <DialogFooter>
+                        <DialogFooter className="flex-col sm:flex-row gap-2">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setIsAddOpen(false)}
+                                className="w-full sm:w-auto"
+                            >
+                                Annulla
+                            </Button>
                             <Button
                                 type="submit"
                                 onClick={handleAddCorso}
                                 disabled={isSaving || !newCorso.nome}
+                                className="w-full sm:w-auto font-semibold"
                             >
                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salva Corso"}
                             </Button>
@@ -251,35 +259,35 @@ export default function CorsiPage() {
                 </Dialog>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
                 {/* Quick Stats overview */}
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Card className="shadow-sm">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
                         <CardTitle className="text-sm font-medium">Corsi Attivi</CardTitle>
                         <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-4 sm:p-6 pt-0">
                         <div className="text-2xl font-bold">{corsi.length}</div>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Card className="shadow-sm">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
                         <CardTitle className="text-sm font-medium">Totale Iscritti</CardTitle>
                         <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-4 sm:p-6 pt-0">
                         <div className="text-2xl font-bold">
                             {corsi.reduce((acc, curr) => acc + curr.iscritti_count, 0)}
                         </div>
                         <p className="text-xs text-muted-foreground">Allievi frequentanti</p>
                     </CardContent>
                 </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Card className="shadow-sm sm:col-span-2 md:col-span-1">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
                         <CardTitle className="text-sm font-medium">Ricavo Mensile Stimato</CardTitle>
                         <Euro className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-4 sm:p-6 pt-0">
                         <div className="text-2xl font-bold">
                             € {corsi.reduce((acc, curr) => acc + (curr.iscritti_count * curr.prezzo_mensile), 0).toFixed(2)}
                         </div>
@@ -288,29 +296,29 @@ export default function CorsiPage() {
                 </Card>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Elenco Corsi</CardTitle>
-                    <CardDescription>
+            <Card className="shadow-sm">
+                <CardHeader className="p-4 sm:p-6">
+                    <CardTitle className="text-lg sm:text-xl">Elenco Corsi</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
                         Gestisci le classi, le quote di partecipazione e visualizza gli iscritti.
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="flex items-center py-4">
-                        <div className="relative w-full max-w-sm">
+                <CardContent className="p-4 sm:p-6 pt-0">
+                    <div className="flex items-center py-2 sm:py-4">
+                        <div className="relative w-full sm:max-w-sm">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
                                 type="search"
                                 placeholder="Cerca per nome corso..."
-                                className="pl-8"
+                                className="pl-8 h-11 text-sm sm:text-base"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <div className="rounded-md border">
-                        <Table>
+                    <div className="rounded-md border overflow-x-auto w-full">
+                        <Table className="min-w-[650px]">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Corso</TableHead>
@@ -383,10 +391,10 @@ export default function CorsiPage() {
 
             {/* View Iscritti Dialog */}
             <Dialog open={!!corsoToViewAglievi} onOpenChange={(open) => !open && setCorsoToViewAglievi(null)}>
-                <DialogContent>
+                <DialogContent className="w-[95vw] sm:max-w-[480px] p-4 sm:p-6">
                     <DialogHeader>
                         <DialogTitle>Iscritti al corso: {corsoToViewAglievi?.nome}</DialogTitle>
-                        <DialogDescription>Elenco degli allievi attualmente attivi e registrati a questo corso.</DialogDescription>
+                        <DialogDescription className="text-xs sm:text-sm">Elenco degli allievi attualmente attivi e registrati a questo corso.</DialogDescription>
                     </DialogHeader>
                     <div className="py-2 max-h-[60vh] overflow-y-auto">
                         {isLoadingIscritti ? (
@@ -395,12 +403,12 @@ export default function CorsiPage() {
                             <ul className="space-y-2">
                                 {iscrittiList.map((al: any) => (
                                     <li key={al.id} className="p-3 bg-muted rounded-md border flex items-center justify-between shadow-sm">
-                                        <span className="font-semibold text-foreground">{al.cognome} {al.nome}</span>
+                                        <span className="font-semibold text-foreground text-sm sm:text-base">{al.cognome} {al.nome}</span>
                                     </li>
                                 ))}
                             </ul>
                         ) : (
-                            <p className="text-center text-muted-foreground py-8">Nessun iscritto attualmente a questo corso.</p>
+                            <p className="text-center text-muted-foreground py-8 text-sm">Nessun iscritto attualmente a questo corso.</p>
                         )}
                     </div>
                 </DialogContent>
@@ -408,60 +416,59 @@ export default function CorsiPage() {
 
             {/* Edit Corso Dialog */}
             <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="w-[95vw] sm:max-w-[450px] p-4 sm:p-6">
                     <DialogHeader>
                         <DialogTitle>Modifica Corso</DialogTitle>
-                        <DialogDescription>
+                        <DialogDescription className="text-xs sm:text-sm">
                             Aggiorna i dettagli del corso o eliminalo definitivamente.
                         </DialogDescription>
                     </DialogHeader>
                     {corsoToEdit && (
-                        <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="edit-nome" className="text-right">Nome *</Label>
+                        <div className="space-y-3 sm:space-y-4 py-2 sm:py-4">
+                            <div className="space-y-1.5">
+                                <Label htmlFor="edit-nome" className="text-xs sm:text-sm font-medium">Nome Corso *</Label>
                                 <Input
                                     id="edit-nome"
-                                    className="col-span-3"
                                     value={corsoToEdit.nome}
                                     onChange={(e) => setCorsoToEdit({ ...corsoToEdit, nome: e.target.value })}
+                                    className="h-11 text-sm sm:text-base"
                                 />
                             </div>
-                            <div className="grid grid-cols-4 items-center gap-4">
-                                <Label htmlFor="edit-prezzo" className="text-right">Prezzo Mensile</Label>
-                                <div className="col-span-3">
-                                    <Input
-                                        id="edit-prezzo"
-                                        type="number"
-                                        placeholder="0 per In Segreteria"
-                                        value={corsoToEdit.prezzo_mensile}
-                                        onChange={(e) => setCorsoToEdit({ ...corsoToEdit, prezzo_mensile: parseFloat(e.target.value) || 0 })}
-                                    />
-                                    <p className="text-[10px] text-muted-foreground mt-1 right-0">L'importo 0 figurerà come "In Segreteria"</p>
-                                </div>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="edit-prezzo" className="text-xs sm:text-sm font-medium">Prezzo Mensile (€)</Label>
+                                <Input
+                                    id="edit-prezzo"
+                                    type="number"
+                                    placeholder="0 per In Segreteria"
+                                    value={corsoToEdit.prezzo_mensile}
+                                    onChange={(e) => setCorsoToEdit({ ...corsoToEdit, prezzo_mensile: parseFloat(e.target.value) || 0 })}
+                                    className="h-11 text-sm sm:text-base"
+                                />
+                                <p className="text-[11px] text-muted-foreground">L'importo 0 figurerà come "In Segreteria"</p>
                             </div>
-                            <div className="grid grid-cols-4 items-start gap-4">
-                                <Label htmlFor="edit-descrizione" className="text-right mt-2">Descrizione</Label>
+                            <div className="space-y-1.5">
+                                <Label htmlFor="edit-descrizione" className="text-xs sm:text-sm font-medium">Descrizione</Label>
                                 <Textarea
                                     id="edit-descrizione"
-                                    className="col-span-3"
                                     value={corsoToEdit.descrizione || ''}
                                     onChange={(e) => setCorsoToEdit({ ...corsoToEdit, descrizione: e.target.value })}
+                                    className="text-sm min-h-[80px]"
                                 />
                             </div>
                         </div>
                     )}
-                    <DialogFooter className="flex flex-col-reverse sm:flex-row justify-between w-full max-sm:gap-2">
+                    <DialogFooter className="flex flex-col-reverse sm:flex-row justify-between w-full gap-2 pt-2">
                         <Button 
                             variant="destructive" 
                             type="button" 
                             onClick={() => handleDeleteCorso(corsoToEdit?.id, corsoToEdit?.nome)}
-                            className="sm:mr-auto"
+                            className="w-full sm:w-auto"
                         >
                             Elimina
                         </Button>
-                        <div className="flex gap-2 justify-end w-full">
-                            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Annulla</Button>
-                            <Button type="submit" onClick={handleEditCorso} disabled={isSaving || !corsoToEdit?.nome}>
+                        <div className="flex gap-2 justify-end w-full sm:w-auto">
+                            <Button variant="outline" className="flex-1 sm:flex-initial" onClick={() => setIsEditOpen(false)}>Annulla</Button>
+                            <Button type="submit" className="flex-1 sm:flex-initial font-semibold" onClick={handleEditCorso} disabled={isSaving || !corsoToEdit?.nome}>
                                 {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salva Modifiche"}
                             </Button>
                         </div>

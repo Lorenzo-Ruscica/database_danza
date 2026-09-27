@@ -107,25 +107,25 @@ export default function ContabilitaPage() {
                 />
             )}
 
-            <div className="flex items-center justify-between">
-                <h1 className="text-3xl font-bold tracking-tight">Contabilità</h1>
-                <div className="flex gap-2">
-                    <Button variant="outline">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Contabilità</h1>
+                <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <Button variant="outline" className="flex-1 sm:flex-initial h-11">
                         <Download className="mr-2 h-4 w-4" /> Esporta
                     </Button>
-                    <Button>
+                    <Button className="flex-1 sm:flex-initial h-11 font-semibold">
                         <PlusCircle className="mr-2 h-4 w-4" /> Registra Pagamento
                     </Button>
                 </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
+                <Card className="shadow-sm">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
                         <CardTitle className="text-sm font-medium">Incasso Odierno</CardTitle>
                         <CalendarDays className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-4 sm:p-6 pt-0">
                         <div className="text-2xl font-bold">€ {incassoOggi.toFixed(2)}</div>
                         <p className="text-xs text-muted-foreground">
                             {format(new Date(), "dd MMMM yyyy", { locale: it })}
@@ -133,12 +133,12 @@ export default function ContabilitaPage() {
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <Card className="shadow-sm">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-4 sm:p-6">
                         <CardTitle className="text-sm font-medium">Incasso Mensile</CardTitle>
                         <TrendingUp className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="p-4 sm:p-6 pt-0">
                         <div className="text-2xl font-bold">€ {incassoMese.toFixed(2)}</div>
                         <p className="text-xs text-muted-foreground">
                             {format(new Date(), "MMMM yyyy", { locale: it })}
@@ -147,29 +147,29 @@ export default function ContabilitaPage() {
                 </Card>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Storico Ricevute</CardTitle>
-                    <CardDescription>
+            <Card className="shadow-sm">
+                <CardHeader className="p-4 sm:p-6">
+                    <CardTitle className="text-lg sm:text-xl">Storico Ricevute</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
                         Gestisci i pagamenti mensili e stampa le ricevute in A4 (Madre/Figlia).
                     </CardDescription>
                 </CardHeader>
-                <CardContent>
-                    <div className="flex items-center py-4">
-                        <div className="relative w-full max-w-sm">
+                <CardContent className="p-4 sm:p-6 pt-0">
+                    <div className="flex items-center py-2 sm:py-4">
+                        <div className="relative w-full sm:max-w-sm">
                             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                             <Input
                                 type="search"
                                 placeholder="Cerca per allievo..."
-                                className="pl-8"
+                                className="pl-8 h-11 text-sm sm:text-base"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
                         </div>
                     </div>
 
-                    <div className="rounded-md border">
-                        <Table>
+                    <div className="rounded-md border overflow-x-auto w-full">
+                        <Table className="min-w-[650px]">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Data</TableHead>

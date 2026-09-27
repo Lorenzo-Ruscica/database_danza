@@ -1071,7 +1071,7 @@ function ScannerContent() {
 
             {/* Modalifica Corsi Allievo */}
             <Dialog open={isEditCorsiOpen} onOpenChange={setIsEditCorsiOpen}>
-                <DialogContent className="sm:max-w-[450px]">
+                <DialogContent className="w-[95vw] sm:max-w-[450px] p-4 sm:p-6">
                     <DialogHeader>
                         <DialogTitle>Modifica Corsi Allievo</DialogTitle>
                         <DialogDescription>
@@ -1138,9 +1138,9 @@ function ScannerContent() {
                             )
                         })}
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsEditCorsiOpen(false)}>Annulla</Button>
-                        <Button onClick={handleSaveCorsi} disabled={isSavingCorsi}>
+                    <DialogFooter className="flex-col sm:flex-row gap-2">
+                        <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsEditCorsiOpen(false)}>Annulla</Button>
+                        <Button className="w-full sm:w-auto" onClick={handleSaveCorsi} disabled={isSavingCorsi}>
                             {isSavingCorsi ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salva e Aggiorna"}
                         </Button>
                     </DialogFooter>
@@ -1149,12 +1149,12 @@ function ScannerContent() {
 
             {/* Modalifica Dati Allievo */}
             <Dialog open={isEditDatiOpen} onOpenChange={setIsEditDatiOpen}>
-                <DialogContent className="sm:max-w-[600px] max-h-[90vh] flex flex-col">
+                <DialogContent className="w-[95vw] sm:max-w-[600px] max-h-[90vh] flex flex-col p-4 sm:p-6">
                     <DialogHeader>
                         <DialogTitle>Modifica Dati Anagrafici</DialogTitle>
                     </DialogHeader>
-                    <div className="py-4 space-y-4 overflow-y-auto px-1 flex-1">
-                        <div className="grid grid-cols-2 gap-4">
+                    <div className="py-2 sm:py-4 space-y-3 sm:space-y-4 overflow-y-auto px-1 flex-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                             <div className="space-y-1">
                                 <label className="text-xs font-semibold text-muted-foreground">Nome</label>
                                 <Input value={datiForm.nome} onChange={e => setDatiForm({...datiForm, nome: e.target.value})} />
@@ -1179,7 +1179,7 @@ function ScannerContent() {
                                 <label className="text-xs font-semibold text-muted-foreground">Prov. Nascita</label>
                                 <Input value={datiForm.provincia_nascita} onChange={e => setDatiForm({...datiForm, provincia_nascita: e.target.value})} />
                             </div>
-                            <div className="space-y-1 col-span-2">
+                            <div className="space-y-1 col-span-1 sm:col-span-2">
                                 <label className="text-xs font-semibold text-muted-foreground">Indirizzo Residenza</label>
                                 <Input value={datiForm.indirizzo_residenza} onChange={e => setDatiForm({...datiForm, indirizzo_residenza: e.target.value})} />
                             </div>
@@ -1199,14 +1199,14 @@ function ScannerContent() {
                                 <label className="text-xs font-semibold text-muted-foreground">Email</label>
                                 <Input type="email" value={datiForm.email} onChange={e => setDatiForm({...datiForm, email: e.target.value})} />
                             </div>
-                            <div className="space-y-1 col-span-2">
+                            <div className="space-y-1 col-span-1 sm:col-span-2">
                                 <label className="text-xs font-semibold text-muted-foreground">Numero Tessera (Lasciare vuoto per Da Assegnare)</label>
                                 <Input value={datiForm.tessera_numero} onChange={e => setDatiForm({...datiForm, tessera_numero: e.target.value})} />
                             </div>
 
                             {allievo?.is_minore && (
                                 <>
-                                    <div className="col-span-2 mt-2 pt-4 border-t border-border">
+                                    <div className="col-span-1 sm:col-span-2 mt-2 pt-4 border-t border-border">
                                         <h4 className="text-sm font-bold text-foreground">Dati Tutore Legale</h4>
                                     </div>
                                     <div className="space-y-1">
@@ -1217,7 +1217,7 @@ function ScannerContent() {
                                         <label className="text-xs font-semibold text-muted-foreground">Cognome Tutore</label>
                                         <Input value={datiForm.tutore_cognome || ''} onChange={e => setDatiForm({...datiForm, tutore_cognome: e.target.value})} />
                                     </div>
-                                    <div className="space-y-1 col-span-2">
+                                    <div className="space-y-1 col-span-1 sm:col-span-2">
                                         <label className="text-xs font-semibold text-muted-foreground">Codice Fiscale Tutore</label>
                                         <Input value={datiForm.tutore_codice_fiscale || ''} onChange={e => setDatiForm({...datiForm, tutore_codice_fiscale: e.target.value})} />
                                     </div>
@@ -1225,9 +1225,9 @@ function ScannerContent() {
                             )}
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsEditDatiOpen(false)}>Annulla</Button>
-                        <Button onClick={handleSaveDati} disabled={isSavingDati}>
+                    <DialogFooter className="flex-col sm:flex-row gap-2">
+                        <Button variant="outline" className="w-full sm:w-auto" onClick={() => setIsEditDatiOpen(false)}>Annulla</Button>
+                        <Button className="w-full sm:w-auto" onClick={handleSaveDati} disabled={isSavingDati}>
                             {isSavingDati ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : "Salva Modifiche"}
                         </Button>
                     </DialogFooter>

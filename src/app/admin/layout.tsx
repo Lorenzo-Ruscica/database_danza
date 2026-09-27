@@ -24,10 +24,10 @@ export default function AdminLayout({
                     </div>
                 </header>
 
-                {/* Header Mobile Incollato in Alt */}
+                {/* Header Mobile Incollato in Alto */}
                 <MobileHeader />
 
-                <main className="flex flex-1 flex-col gap-4 p-4 md:p-6 lg:gap-6 lg:p-6 mb-16 lg:mb-0 max-w-[100vw] overflow-x-hidden">
+                <main className="flex flex-1 flex-col gap-4 p-3 sm:p-4 md:p-6 lg:gap-6 lg:p-6 pb-24 lg:pb-6 max-w-[100vw] overflow-x-hidden">
                     {children}
                 </main>
 

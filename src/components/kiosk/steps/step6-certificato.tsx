@@ -125,28 +125,28 @@ export default function Step6Certificato({ onComplete }: { onComplete?: (data: {
     }
 
     return (
-        <div className="flex flex-col gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="text-center space-y-2">
-                <h2 className="text-3xl font-bold flex items-center justify-center gap-3">
-                    <CheckCircle2 className="h-8 w-8 text-primary" />
+        <div className="flex flex-col gap-6 sm:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="text-center space-y-1 sm:space-y-2">
+                <h2 className="text-2xl sm:text-3xl font-bold flex items-center justify-center gap-2 sm:gap-3">
+                    <CheckCircle2 className="h-6 w-6 sm:h-8 sm:w-8 text-primary shrink-0" />
                     6. Riepilogo Finale
                 </h2>
-                <p className="text-muted-foreground text-lg">
+                <p className="text-muted-foreground text-sm sm:text-lg">
                     Conferma i tuoi dati per completare l'iscrizione.
                 </p>
             </div>
 
-            <div className="bg-background rounded-2xl border-2 border-dashed border-primary/30 p-8 min-h-[300px] flex flex-col items-center justify-center relative overflow-hidden shadow-sm">
-                <div className="text-center space-y-6 max-w-lg">
-                    <div className="bg-amber-100 dark:bg-amber-950/40 w-24 h-24 rounded-full flex items-center justify-center mx-auto text-amber-600 dark:text-amber-400 shadow-inner">
-                        <FileWarning className="w-12 h-12" />
+            <div className="bg-background rounded-xl sm:rounded-2xl border-2 border-dashed border-primary/30 p-4 sm:p-8 min-h-[220px] sm:min-h-[280px] flex flex-col items-center justify-center relative overflow-hidden shadow-sm">
+                <div className="text-center space-y-4 sm:space-y-6 max-w-lg">
+                    <div className="bg-amber-100 dark:bg-amber-950/40 w-16 h-16 sm:w-20 sm:h-20 rounded-full flex items-center justify-center mx-auto text-amber-600 dark:text-amber-400 shadow-inner">
+                        <FileWarning className="w-8 h-8 sm:w-10 sm:h-10" />
                     </div>
                     <div>
-                        <p className="text-2xl font-bold mb-3 text-foreground">Certificato Medico & Scelta Corsi</p>
-                        <p className="text-lg text-muted-foreground leading-relaxed">
+                        <p className="text-lg sm:text-2xl font-bold mb-2 sm:mb-3 text-foreground">Certificato Medico & Scelta Corsi</p>
+                        <p className="text-xs sm:text-base text-muted-foreground leading-relaxed">
                             Ricorda che per completare l'iscrizione e procedere al pagamento, 
                             <span className="font-semibold text-foreground"> dovrai presentare il Certificato Medico e selezionare i tuoi corsi in segreteria.</span>
-                            <br/><br/>
+                            <br className="hidden sm:inline"/><br className="hidden sm:inline"/>
                             Sarà l'amministrazione, tramite scansione del tuo QR Code, 
                             ad assegnare i corsi scelti, caricare il certificato e finalizzare il tesseramento.
                         </p>
@@ -154,11 +154,11 @@ export default function Step6Certificato({ onComplete }: { onComplete?: (data: {
                 </div>
             </div>
 
-            <div className="flex justify-between pt-8 border-t mt-4">
+            <div className="flex flex-col-reverse sm:flex-row justify-between gap-3 pt-4 sm:pt-6 border-t mt-2 sm:mt-4">
                 <Button
                     variant="outline"
                     size="lg"
-                    className="h-16 px-8 text-xl"
+                    className="h-13 sm:h-16 px-6 sm:px-8 text-base sm:text-xl w-full sm:w-auto"
                     onClick={prevStep}
                     disabled={isCapturing}
                 >
@@ -166,12 +166,12 @@ export default function Step6Certificato({ onComplete }: { onComplete?: (data: {
                 </Button>
                 <Button
                     size="lg"
-                    className="h-16 px-12 text-xl font-bold"
+                    className="h-13 sm:h-16 px-8 sm:px-12 text-base sm:text-xl font-bold shadow-md w-full sm:w-auto"
                     onClick={handleSubmitEnrollment}
                     disabled={isCapturing}
                 >
                     {isCapturing ? "Elaborazione in corso..." : "Invia Iscrizione Definitiva"}
-                    {!isCapturing && <Upload className="ml-2 h-6 w-6" />}
+                    {!isCapturing && <Upload className="ml-2 h-5 w-5 sm:h-6 sm:w-6" />}
                 </Button>
             </div>
         </div>

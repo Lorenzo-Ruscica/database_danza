@@ -361,11 +361,11 @@ export default function PresenzePage() {
             <AdminQrScanner open={scannerOpen} onOpenChange={setScannerOpen} mode="presenze" onScanSuccess={handleFastScan} />
 
             {/* Header */}
-            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4 bg-muted/30 p-4 rounded-xl border">
+            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 sm:gap-4 bg-muted/30 p-3 sm:p-4 rounded-xl border">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Registro Presenze</h1>
-                    <div className="flex items-center text-muted-foreground mt-1">
-                        <CalendarDays className="mr-2 h-4 w-4" />
+                    <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Registro Presenze</h1>
+                    <div className="flex items-center text-xs sm:text-sm text-muted-foreground mt-1">
+                        <CalendarDays className="mr-1.5 h-4 w-4" />
                         {viewMode === 'daily' 
                             ? (dataSelezionata ? format(new Date(dataSelezionata), "EEEE d MMMM yyyy", { locale: it }) : "Seleziona una data")
                             : (meseSelezionato ? format(new Date(Number(meseSelezionato.split('-')[0]), Number(meseSelezionato.split('-')[1])-1, 1), "MMMM yyyy", { locale: it }) : "Seleziona un mese")
@@ -373,22 +373,22 @@ export default function PresenzePage() {
                     </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto">
-                    <div className="flex bg-muted p-1 rounded-lg w-full md:w-auto h-12">
+                <div className="flex flex-col sm:flex-row flex-wrap md:flex-nowrap gap-2 sm:gap-3 w-full xl:w-auto">
+                    <div className="flex bg-muted p-1 rounded-lg w-full sm:w-auto h-11 sm:h-12">
                         <Button 
                             variant={viewMode === 'daily' ? 'default' : 'ghost'} 
                             onClick={() => setViewMode('daily')}
-                            className="flex-1 h-full text-sm md:text-base px-6 shadow-sm"
+                            className="flex-1 h-full text-xs sm:text-sm md:text-base px-3 sm:px-6 shadow-sm font-semibold"
                         >
-                            <LayoutGrid className="w-4 h-4 md:w-5 md:h-5 mr-2"/>
+                            <LayoutGrid className="w-4 h-4 mr-1.5"/>
                             Giornaliero
                         </Button>
                         <Button 
                             variant={viewMode === 'monthly' ? 'default' : 'ghost'} 
                             onClick={() => setViewMode('monthly')}
-                            className="flex-1 h-full text-sm md:text-base px-6 shadow-sm"
+                            className="flex-1 h-full text-xs sm:text-sm md:text-base px-3 sm:px-6 shadow-sm font-semibold"
                         >
-                            <CalendarRange className="w-4 h-4 md:w-5 md:h-5 mr-2"/>
+                            <CalendarRange className="w-4 h-4 mr-1.5"/>
                             Mensile
                         </Button>
                     </div>
@@ -396,11 +396,11 @@ export default function PresenzePage() {
                     <Button
                         variant="default"
                         onClick={() => setScannerOpen(true)}
-                        className="h-12 px-4 shadow-sm"
+                        className="h-11 sm:h-12 px-3 sm:px-4 shadow-sm w-full sm:w-auto font-semibold flex items-center justify-center gap-2"
                         title="Scannerizza Tessera Allievo"
                     >
-                        <QrCode className="w-5 h-5 md:mr-2" />
-                        <span className="hidden md:inline">Scanner Rapido Multiplo</span>
+                        <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <span>Scanner Presenze</span>
                     </Button>
 
                     {viewMode === 'daily' ? (
@@ -408,25 +408,25 @@ export default function PresenzePage() {
                             type="date"
                             value={dataSelezionata}
                             onChange={(e) => setDataSelezionata(e.target.value)}
-                            className="h-12 text-base w-full md:w-[200px]"
+                            className="h-11 sm:h-12 text-sm sm:text-base w-full sm:w-[180px] md:w-[200px]"
                         />
                     ) : (
                         <Input 
                             type="month"
                             value={meseSelezionato}
                             onChange={(e) => setMeseSelezionato(e.target.value)}
-                            className="h-12 text-base w-full md:w-[200px]"
+                            className="h-11 sm:h-12 text-sm sm:text-base w-full sm:w-[180px] md:w-[200px]"
                         />
                     )}
                     
-                    <div className="w-full md:w-[250px]">
+                    <div className="w-full sm:w-full md:w-[250px]">
                         <Select value={corsoSelezionato} onValueChange={setCorsoSelezionato}>
-                            <SelectTrigger className="h-12 text-base bg-background">
+                            <SelectTrigger className="h-11 sm:h-12 text-sm sm:text-base bg-background font-medium">
                                 <SelectValue placeholder="Seleziona Corso" />
                             </SelectTrigger>
                             <SelectContent>
                                 {corsi.map(corso => (
-                                    <SelectItem key={corso.id} value={corso.id} className="text-base py-3">
+                                    <SelectItem key={corso.id} value={corso.id} className="text-sm sm:text-base py-2.5 sm:py-3">
                                         {corso.nome}
                                     </SelectItem>
                                 ))}
@@ -456,7 +456,7 @@ export default function PresenzePage() {
                             Nessun allievo iscritto a questo corso.
                         </div>
                     ) : (
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-4">
                             {iscritti.map((allievo) => (
                                 <Card
                                     key={allievo.id}
@@ -466,18 +466,18 @@ export default function PresenzePage() {
                                         }`}
                                     onClick={() => togglePresenzaDaily(allievo.id)}
                                 >
-                                    <CardContent className="flex flex-col items-center justify-center p-4 md:p-6 min-h-[140px] md:min-h-[160px] text-center gap-3 md:gap-4 relative">
+                                    <CardContent className="flex flex-col items-center justify-center p-3 sm:p-5 min-h-[125px] sm:min-h-[160px] text-center gap-2 sm:gap-4 relative">
                                         {allievo.presente && (
                                             <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1 shadow-sm">
                                                 <Check className="h-3 w-3 md:h-4 md:w-4" />
                                             </div>
                                         )}
 
-                                        <div className={`rounded-full p-3 md:p-4 ${allievo.presente ? 'bg-green-500/20 text-green-600' : 'bg-muted text-muted-foreground'}`}>
-                                            <User className="h-6 w-6 md:h-8 md:w-8" />
+                                        <div className={`rounded-full p-2.5 sm:p-4 ${allievo.presente ? 'bg-green-500/20 text-green-600' : 'bg-muted text-muted-foreground'}`}>
+                                            <User className="h-5 w-5 sm:h-8 sm:w-8" />
                                         </div>
 
-                                        <span className={`font-medium text-sm md:text-base leading-tight ${allievo.presente ? 'text-green-700 dark:text-green-400 font-semibold' : ''}`}>
+                                        <span className={`font-medium text-xs sm:text-base leading-tight ${allievo.presente ? 'text-green-700 dark:text-green-400 font-semibold' : ''}`}>
                                             {allievo.nome}
                                         </span>
                                     </CardContent>
@@ -493,29 +493,29 @@ export default function PresenzePage() {
             )}
 
             {/* Footer */}
-            <div className="flex flex-col sm:flex-row justify-between gap-4 py-2">
+            <div className="flex flex-col sm:flex-row justify-between gap-3 sm:gap-4 py-2">
                 {viewMode === 'daily' ? (
                     <>
                         <Button
                             variant="outline"
                             size="lg"
-                            className="h-14 px-8 text-lg w-full sm:w-auto"
+                            className="h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-lg w-full sm:w-auto font-medium"
                             onClick={handlePrintRegistro}
                         >
-                            <Printer className="mr-2 h-5 w-5" />
+                            <Printer className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
                             Stampa Lista Vuota
                         </Button>
                         <Button 
                             size="lg" 
-                            className="h-14 px-8 text-lg w-full sm:w-auto shadow-md"
+                            className="h-12 sm:h-14 px-6 sm:px-8 text-sm sm:text-lg w-full sm:w-auto shadow-md font-bold"
                             onClick={handleSaveRegistro}
                             disabled={isSavingPresenze || isLoading || !isOggiGiorno}
                         >
-                            {isSavingPresenze ? <Loader2 className="mr-2 h-5 w-5 animate-spin"/> : "Salva Registro"} ({iscritti.filter(i => i.presente).length} presenti)
+                            {isSavingPresenze ? <Loader2 className="mr-2 h-4 w-4 sm:h-5 sm:w-5 animate-spin"/> : "Salva Registro"} ({iscritti.filter(i => i.presente).length} presenti)
                         </Button>
                     </>
                 ) : (
-                    <div className="text-muted-foreground text-sm w-full text-center flex items-center justify-center bg-muted/50 p-4 rounded-lg border">
+                    <div className="text-muted-foreground text-xs sm:text-sm w-full text-center flex items-center justify-center bg-muted/50 p-3 sm:p-4 rounded-lg border">
                         Questo tabellone mostra unicamente la cronologia mensile delle presenze.
                     </div>
                 )}

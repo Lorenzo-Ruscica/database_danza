@@ -88,55 +88,68 @@ export default function KioskPage() {
 
 
       {/* Header Totem */}
-      <header className="relative z-10 py-10 px-8 flex flex-col items-center animate-fade-in-up-soft" style={{ animationDelay: '0.1s' }}>
+      <header className="relative z-10 py-5 sm:py-8 md:py-10 px-4 sm:px-8 flex flex-col items-center animate-fade-in-up-soft" style={{ animationDelay: '0.1s' }}>
 
         {/* Admin Access Button (Top Left) */}
         <Link
           href="/admin"
-          className={`absolute top-6 left-8 p-3 rounded-full transition-all duration-300 z-50 hover:scale-110 active:scale-95 ${isDark ? 'bg-white/5 hover:bg-white/10 text-white/50 hover:text-white' : 'bg-black/5 hover:bg-black/10 text-black/50 hover:text-black'}`}
+          className={`absolute top-4 left-4 sm:top-6 sm:left-8 p-2.5 sm:p-3 rounded-full transition-all duration-300 z-50 hover:scale-110 active:scale-95 ${isDark ? 'bg-white/5 hover:bg-white/10 text-white/50 hover:text-white' : 'bg-black/5 hover:bg-black/10 text-black/50 hover:text-black'}`}
           title="Area Riservata Admin"
         >
-          <Lock className="w-5 h-5" />
+          <Lock className="w-4 h-4 sm:w-5 sm:h-5" />
         </Link>
 
         <button
           onClick={() => setIsDark(!isDark)}
-          className={`absolute top-6 right-8 p-3 rounded-full transition-all duration-300 z-50 ${isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-black/5 hover:bg-black/10'}`}
+          className={`absolute top-4 right-4 sm:top-6 sm:right-8 p-2.5 sm:p-3 rounded-full transition-all duration-300 z-50 ${isDark ? 'bg-white/10 hover:bg-white/20' : 'bg-black/5 hover:bg-black/10'}`}
           aria-label="Toggle dark mode"
         >
-          {isDark ? <Sun className="w-6 h-6 text-white" /> : <Moon className="w-6 h-6 text-black" />}
+          {isDark ? <Sun className="w-5 h-5 sm:w-6 sm:h-6 text-white" /> : <Moon className="w-5 h-5 sm:w-6 sm:h-6 text-black" />}
         </button>
 
-        <div className="relative inline-block mb-3 text-center group">
+        <div className="relative inline-block mb-1 sm:mb-3 text-center group">
           <Image 
             src="/logo_Bigdance.png" 
             alt="BigDance Logo" 
-            width={320} 
-            height={140} 
+            width={280} 
+            height={120} 
             priority
-            className="object-contain relative z-10 transition-transform duration-700 ease-out group-hover:scale-105"
+            className="w-44 sm:w-60 md:w-72 h-auto object-contain relative z-10 transition-transform duration-700 ease-out group-hover:scale-105"
           />
         </div>
-        <div className="flex justify-center mt-6">
-          <div className="flex items-center gap-3">
+
+        {/* Step indicator responsive bar */}
+        <div className="w-full max-w-xs sm:max-w-md md:max-w-lg mt-3 sm:mt-6 px-2">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 w-full">
             {[1, 2, 3, 4, 5, 6].map((idx) => (
               <div
                 key={idx}
-                className={`w-16 h-1.5 rounded-full transition-all duration-700 ease-in-out ${idx === step
-                  ? 'bg-primary scale-y-150 shadow-[0_4px_10px_rgba(26,143,181,0.3)]'
+                className={`flex-1 h-1.5 sm:h-2 rounded-full transition-all duration-700 ease-in-out ${idx === step
+                  ? 'bg-primary scale-y-125 sm:scale-y-150 shadow-[0_4px_10px_rgba(26,143,181,0.3)]'
                   : idx < step
-                    ? 'bg-primary/50'
+                    ? 'bg-primary/60'
                     : 'bg-muted-foreground/20'
                   }`}
               />
             ))}
           </div>
+          <div className="flex justify-between items-center text-[11px] sm:text-xs text-muted-foreground mt-1.5 font-medium px-0.5">
+            <span>Passo {step} di 6</span>
+            <span className="font-semibold text-primary">
+              {step === 1 && "Anagrafica"}
+              {step === 2 && "Residenza & CF"}
+              {step === 3 && "Contatti"}
+              {step === 4 && "Regolamento"}
+              {step === 5 && "Firma"}
+              {step === 6 && "Riepilogo"}
+            </span>
+          </div>
         </div>
       </header>
 
-      {/* Main Content Area (ottimizzato Touch) */}
-      <main className="flex-1 overflow-auto p-4 md:p-8 flex justify-center items-start pb-24 relative z-10 animate-fade-in-up-soft" style={{ animationDelay: '0.3s' }}>
-        <div className="w-full max-w-5xl rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden transition-all duration-1000 transform hover:scale-[1.005] glass-panel">
+      {/* Main Content Area (ottimizzato Touch & Mobile) */}
+      <main className="flex-1 overflow-auto p-2.5 sm:p-4 md:p-8 flex justify-center items-start pb-20 sm:pb-24 relative z-10 animate-fade-in-up-soft" style={{ animationDelay: '0.3s' }}>
+        <div className="w-full max-w-5xl rounded-2xl sm:rounded-3xl md:rounded-[2.5rem] p-4 sm:p-7 md:p-12 relative overflow-hidden transition-all duration-1000 glass-panel shadow-xl">
           {/* Subtle inner reflection */}
           <div className="absolute inset-x-0 top-0 h-px w-full bg-gradient-to-r from-transparent via-white/30 to-transparent" />
 
