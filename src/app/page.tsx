@@ -10,7 +10,6 @@ import Step5Firma from "@/components/kiosk/steps/step5-firma"
 import Step6Certificato from "@/components/kiosk/steps/step6-certificato"
 import { SuccessTotem } from "@/components/kiosk/success-totem"
 import { InactivityTimer } from "@/components/kiosk/inactivity-timer"
-import { VirtualKeyboard } from "@/components/kiosk/virtual-keyboard"
 import { Moon, Sun, Lock } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -84,8 +83,6 @@ export default function KioskPage() {
 
       {/* Global Kiosk Interactions */}
       <InactivityTimer onTimeout={handleReset} isActive={step > 1 || anagrafica.nome !== '' || anagrafica.cognome !== ''} />
-      <VirtualKeyboard />
-
 
       {/* Header Totem */}
       <header className="relative z-10 py-5 sm:py-8 md:py-10 px-4 sm:px-8 flex flex-col items-center animate-fade-in-up-soft" style={{ animationDelay: '0.1s' }}>
